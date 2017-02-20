@@ -2,8 +2,8 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       noreion_myreion_512_z5.038 
-FileNameMergedGalaxies noreion_myreion_512_MergedGalaxies
+FileNameGalaxies       noreion_reionmine_DRAGOHSPhotHI_z5.038 
+FileNameMergedGalaxies noreion_reionmine_DRAGONSPhotHI_MergedGalaxies
 GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/512/ 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/512/grid/January_input/
 
