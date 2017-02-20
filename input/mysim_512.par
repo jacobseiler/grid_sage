@@ -2,8 +2,8 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       fiducial 
-OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/512/
+FileNameGalaxies       tmp 
+OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/512
 
 
 FirstFile         0
@@ -85,8 +85,8 @@ EtaSN                   5.0e-3  ;supernova efficiency
 %------------------------------------------
 
 PhotoionDir 		/lustre/projects/p004_swin/jseiler/SAGE_output/512/photoionization/
-PhotoionName 		photoionization_noreion
-ReionRedshiftName 	ReionizationRedshift_NoReion
+PhotoionName 		photoionization_noreion_512_DRAGONSPhotHI
+ReionRedshiftName 	ReionizationRedshift_512_noreion_reionmine	
 
 
 %------------------------------------------

@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       noreion
+FileNameGalaxies       noreion_verylowSF
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -55,7 +55,7 @@ DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabi
 %----- SAGE model parameters --------------
 %------------------------------------------
 
-SfrEfficiency           0.05  ;efficiency of SF (SFprescription=0)
+SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
