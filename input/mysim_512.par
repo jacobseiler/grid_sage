@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       tmp 
+FileNameGalaxies       fiducial 
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/512
 
 
@@ -48,7 +48,7 @@ GridSize	128
 SFprescription        0   ;0: original Croton et al. 2006
 AGNrecipeOn           2   ;0: switch off; 1: empirical model; 2: Bondi-Hoyle model; 3: cold cloud accretion model
 SupernovaRecipeOn     1   ;0: switch off
-ReionizationOn        2  ;0: switch off; 1: Base; 2: Read in photoionization field use M_filt by Sobacchi (2014) and Geil (2015) 
+ReionizationOn        0  ;0: switch off; 1: Base; 2: Read in photoionization field use M_filt by Sobacchi (2014) and Geil (2015) 
 DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabilities w. instability starbursts
 
 
