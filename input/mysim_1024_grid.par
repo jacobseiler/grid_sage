@@ -2,10 +2,10 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies      noreion_z5.000
-FileNameMergedGalaxies noreion_MergedGalaxies
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/ 
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/grid/January_input/
+FileNameGalaxies       noreion_reionmine_MH_pos_z5.000 
+FileNameMergedGalaxies noreion_reionmine_MH_pos_MergedGalaxies 
+GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/march/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/grid/March_input/
 
 FirstFile         0
 LastFile          124
@@ -55,9 +55,11 @@ UnitVelocity_in_cm_per_s  100000      ;WATCH OUT: km/s
 PhotonPrescription 	1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 SourceEfficiency 	1
 Verbose 		1
-fescPrescription        0  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law fixed at the smallest and largest halo mass.
-MH_min			8.3707 ; Log of the smallest halo mass in the simulation.
-MH_max			12.998 ; Log of the largest halo mass in the simulation.
-kappa			0.0 ; Log fesc for the smallest halo mass
-delta			-2.0 ; Log fesc for the largest halo mass
-fesc			0.15
+fescPrescription        2  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Power Law as a function of sSFR.
+MH_min			8.3707 ; Log of the smallest halo mass in the simulation (Msun yr^-1).
+MH_max			12.998 ; Log of the largest halo mass in the simulation (Msun yr^-1).
+sSFR_min 		-14.0 ; Log of the smallest specific star formation rate in the simulation (yr^-1).
+sSFR_max		-6.80  ; Log of the largest specific star formation rate in the simulation (yr^-1).
+kappa			-2.0    ; Log fesc for the smallest halo mass (fescPrescription == 2) OR smallest specific star formation rate (fescPrescription == 3).
+delta			0.0   ; Log fesc for the largest halo mass (fescPrescription == 2) OR largest specific star formation rate (fescPrescription == 3).
+fesc			0.15   ; Constant fesc for fescPrescription == 0. 
