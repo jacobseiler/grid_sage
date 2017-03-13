@@ -2,10 +2,10 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies        SF0.01_noreion_z5.000 
-FileNameMergedGalaxies  SF0.01_noreion_MergedGalaxies 
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/grid
+FileNameGalaxies        LenHistory_SF0.01_noreion_z5.000 
+FileNameMergedGalaxies  LenHistory_SF0.01_noreion_MergedGalaxies 
+GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/LenHistory
+GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/grid/HaloPartCut0_fescMHneg/
 
 FirstFile         0
 LastFile          124
@@ -61,5 +61,6 @@ MH_max			12.998 ; Log of the largest halo mass in the simulation (Msun yr^-1).
 sSFR_min 		-14.0 ; Log of the smallest specific star formation rate in the simulation (yr^-1).
 sSFR_max		-6.80  ; Log of the largest specific star formation rate in the simulation (yr^-1).
 kappa			0.0    ; Log fesc for the smallest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 0 (fescPrescription == 3). 
-delta			-2.0   ; Log fesc for the largest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 1 (fescPrescription == 3).
+delta			-2.5   ; Log fesc for the largest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 1 (fescPrescription == 3).
 fesc			0.25   ; Constant fesc for fescPrescription == 0. 
+HaloPartCut		0    ; A halo must have length greater than HaloPartCut for us to count and grid it.

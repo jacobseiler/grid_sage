@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/SF0.01_noreion_grid256
+FileNameGalaxies       clean/LenHistory/LenHistory_SF0.01_noreion
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -37,7 +37,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100	
-GridSize	256
+GridSize	128
 
 
 %------------------------------------------
