@@ -5,7 +5,7 @@
 FileNameGalaxies        LenHistory_SF0.01_noreion_z5.000 
 FileNameMergedGalaxies  LenHistory_SF0.01_noreion_MergedGalaxies 
 GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/LenHistory
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/grid/HaloPartCut0_fescMHneg/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/grid/HaloPartCut10_fescEjected/
 
 FirstFile         0
 LastFile          124
