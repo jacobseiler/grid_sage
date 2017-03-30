@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/LenHistory/LenHistory_SF0.01_noreion
+FileNameGalaxies       clean/DelayedSN/NSFH_4_Chabrier_ConstTinyEpsilon
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -57,8 +57,9 @@ DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabi
 
 SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 
-FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
-FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
+FeedbackReheatingEpsilon    1.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
+FeedbackEjectionEfficiency  0.1   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
+N_SFH 			    4     ; Number of Snapshots to sum over to do delayed SN.  0 for instantaneous, -1 for dynamic calculation.
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
 
