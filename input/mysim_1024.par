@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/DelayedSN/IRA
+FileNameGalaxies       clean/DelayedSN/IRA_EtaSN0.5
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -16,7 +16,7 @@ LastFile          124
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
--> 100
+-> 100 
 
 
 %------------------------------------------
@@ -78,7 +78,7 @@ Reionization_z0         8.0   ;these parameter choices give the best fit to Gene
 Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (ReionizationOn=1)
 
 EnergySN                1.0e51  ;energy per supernova
-EtaSN                   5.0e-3  ;supernova efficiency
+EtaSN                   0.5  ;supernova efficiency
 
 IMF			2	; 1 for Salpeter, 2 for Chabrier.
 
