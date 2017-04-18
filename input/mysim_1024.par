@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/DelayedSN/IRA_EtaSN0.5
+FileNameGalaxies       clean/DelayedSN/NewDelayed_Delayed_TimeRes20Myr
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -13,10 +13,10 @@ LastFile          124
 %----- Snapshot output list ---------------
 %------------------------------------------
 
-NumOutputs        6   ; sets the desired number of galaxy outputs; use -1 for all outputs
+NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
--> 100 80 70 60 40 30 
+-> 100 
 
 
 %------------------------------------------
@@ -59,7 +59,9 @@ SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
-N_SFH 			    0     ; Number of Snapshots to sum over to do delayed SN.  0 for instantaneous, -1 for dynamic calculation.
+
+IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
+TimeResolutionSN	    20     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
 
