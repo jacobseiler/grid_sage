@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/DelayedSN/NewDelayed_Delayed_TimeRes20Myr
+FileNameGalaxies       clean/DelayedSN/NewDelayed_Delayed_TimeRes10Myr
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -61,7 +61,7 @@ FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Mart
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
 
 IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
-TimeResolutionSN	    20     ; Time (Myr) between elements used to calculate the delayed SN. 
+TimeResolutionSN	    10     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
 
@@ -82,7 +82,7 @@ Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (R
 EnergySN                1.0e51  ;energy per supernova
 EtaSN                   0.5  ;supernova efficiency
 
-IMF			2	; 1 for Salpeter, 2 for Chabrier.
+IMF			1	; 1 for Salpeter, 2 for Chabrier.
 
 %------------------------------------------
 %------ Reionization Options --------------
