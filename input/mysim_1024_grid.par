@@ -2,10 +2,10 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       NewDelayed_Delayed_SN5Myr_z5.000 
-FileNameMergedGalaxies NewDelayed_Delayed_SN5Myr_MergedGalaxies
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/DelayedSN/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/clean/grid/tmp/
+FileNameGalaxies       IRA_z5.000 
+FileNameMergedGalaxies IRA_MergedGalaxies 
+GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid512/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid512/grid_files
 
 FirstFile         0
 LastFile          124
@@ -14,11 +14,13 @@ LastFile          124
 %----- Snapshot output list ---------------
 %------------------------------------------
 
-NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
+OutputMode        1   ; Sets the output mode, 0 will be the Snapshots listed after the arrow, 1 will be sequential snapshots from LowSnap to HighSnap (inclusive) 
+LowSnap	          24
+HighSnap          78
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1).
--> 78 77 76 75 74 73 72 71 70 69 68 67 66 65 64 63 62 61 60 59 58 57 56 55 54 53 52 51 50 49 48 47 46 45 44 43 42 41 40 39 38 37 36 35 34 33 32 31 30 29 28 27 26 25 24 
-NGrid	55	
+-> 24
+NGrid	1            ; Set OutputMode to 0 and Ngrid to -1 for ALL Snapshots.	
 %------------------------------------------
 %----- Simulation information  ------------
 %------------------------------------------
@@ -37,7 +39,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100
-GridSize	128
+GridSize	512
 LastOutputSnap  99  
 
 %------------------------------------------
