@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       clean/DelayedSN/NewDelayed_Delayed_SN5Myr_SF10Myr_factor
+FileNameGalaxies       May/grid512/IRA
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -25,7 +25,6 @@ NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for al
 
 TreeName              lhalotree.bin   ; assumes the trees are named TreeName.n where n is the file number
 SimulationDir        /lustre/projects/p004_swin/jseiler/Rockstar_output/1024_Halos_noLL/Ltrees 
-DiffuseDir 	      ../input/diffuse/millennium/millennium_mini/
 FileWithSnapList      /home/jseiler/SAGE-stuff/input/MySim.alist
 LastSnapShotNr        100
 
@@ -37,7 +36,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100	
-GridSize	128
+GridSize	512
 
 
 %------------------------------------------
@@ -47,7 +46,7 @@ GridSize	128
 SFprescription        0   ;0: original Croton et al. 2006
 AGNrecipeOn           2   ;0: switch off; 1: empirical model; 2: Bondi-Hoyle model; 3: cold cloud accretion model
 SupernovaRecipeOn     1   ;0: switch off
-ReionizationOn        0  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
+ReionizationOn        1  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
 DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabilities w. instability starbursts
 
 
@@ -60,7 +59,7 @@ SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
 
-IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
+IRA 			    1     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
 TimeResolutionSN	    5     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
