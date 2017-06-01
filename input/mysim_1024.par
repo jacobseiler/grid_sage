@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       May/grid128/Delayed_5Myr_TakeOut2
+FileNameGalaxies       May/grid128/Delayed_PreviousSNChange2
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -80,6 +80,8 @@ Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (R
 
 EnergySN                1.0e51  ;energy per supernova
 EtaSN                   0.5  ;supernova efficiency
+
+RescaleSN		1	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
 
 IMF			2	; 1 for Salpeter, 2 for Chabrier.
 
