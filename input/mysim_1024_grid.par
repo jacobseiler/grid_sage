@@ -10,6 +10,8 @@ GridOutputDir          /lustre/projects/p004_swin/jseiler/tmp/
 FirstFile         0
 LastFile          124
 
+use_sage	  1
+
 %------------------------------------------
 %----- Snapshot output list ---------------
 %------------------------------------------
