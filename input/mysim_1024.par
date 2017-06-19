@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       May/grid128/Delayed_PreviousSNChange2
+FileNameGalaxies       May/grid128/IRA
 OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
 
 FirstFile         0
@@ -59,7 +59,7 @@ SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
 
-IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
+IRA 			    1     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
 TimeResolutionSN	    5     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot

@@ -4,8 +4,8 @@
 
 FileNameGalaxies       IRA_z5.000 
 FileNameMergedGalaxies IRA_MergedGalaxies 
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid512/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid512/grid_files
+GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid128/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/tmp/
 
 FirstFile         0
 LastFile          124
@@ -39,7 +39,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100
-GridSize	512
+GridSize	128
 LastOutputSnap  99  
 
 %------------------------------------------
@@ -60,7 +60,7 @@ Verbose 		1
 fescPrescription        0  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a 
 MH_min			8.3707 ; Log of the smallest halo mass in the simulation (Msun yr^-1).
 MH_max			12.998 ; Log of the largest halo mass in the simulation (Msun yr^-1).
-kappa			0.0    ; Log fesc for the smallest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 0 (fescPrescription == 3). 
-delta			-2.5   ; Log fesc for the largest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 1 (fescPrescription == 3).
+kappa			-2.5    ; Log fesc for the smallest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 0 (fescPrescription == 3). 
+delta			0.0   ; Log fesc for the largest halo mass (fescPrescription == 2) OR Log fesc for Ejected Fraction = 1 (fescPrescription == 3).
 fesc			0.25   ; Constant fesc for fescPrescription == 0. 
 HaloPartCut		0    ; A halo must have length greater than HaloPartCut for us to count and grid it.
