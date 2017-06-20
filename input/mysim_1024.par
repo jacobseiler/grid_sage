@@ -2,8 +2,8 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       May/grid128/IRA
-OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/
+FileNameGalaxies       IRA
+OutputDir              /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256
 
 FirstFile         0
 LastFile          124
@@ -36,7 +36,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100	
-GridSize	128
+GridSize	256
 
 
 %------------------------------------------

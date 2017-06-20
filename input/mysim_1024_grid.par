@@ -4,8 +4,9 @@
 
 FileNameGalaxies       IRA_z5.000 
 FileNameMergedGalaxies IRA_MergedGalaxies 
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid128/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/tmp/
+%GalaxiesInputDir       /lustre/projects/p004_swin/shared/ahutter/tiamat-meraxes/data/
+GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256/grid_files/
 
 FirstFile         0
 LastFile          124
@@ -17,8 +18,8 @@ use_sage	  1
 %------------------------------------------
 
 OutputMode        1   ; Sets the output mode, 0 will be the Snapshots listed after the arrow, 1 will be sequential snapshots from LowSnap to HighSnap (inclusive) 
-LowSnap	          24
-HighSnap          78
+LowSnap	          5
+HighSnap          79
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1).
 -> 24
@@ -41,7 +42,7 @@ Hubble_h        0.678
 PartMass        0.0636717
 
 BoxSize		100
-GridSize	128
+GridSize	256	
 LastOutputSnap  99  
 
 %------------------------------------------
