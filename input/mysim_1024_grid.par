@@ -4,14 +4,14 @@
 
 FileNameGalaxies       IRA_z5.000 
 FileNameMergedGalaxies IRA_MergedGalaxies 
-%GalaxiesInputDir       /lustre/projects/p004_swin/shared/ahutter/tiamat-meraxes/data/
-GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256/grid_files/
+GalaxiesInputDir       /lustre/projects/p004_swin/shared/ahutter/tiamat-meraxes/data/
+%GalaxiesInputDir       /lustre/projects/p004_swin/jseiler/SAGE_output/1024/May/grid256/
+GridOutputDir          /lustre/projects/p004_swin/jseiler/grid_model_data_files/tiamat/grid256_nion/
 
 FirstFile         0
 LastFile          124
 
-use_sage	  1
+use_sage	  0
 
 %------------------------------------------
 %----- Snapshot output list ---------------
@@ -41,7 +41,7 @@ Hubble_h        0.678
 
 PartMass        0.0636717
 
-BoxSize		100
+BoxSize		67.8	
 GridSize	256	
 LastOutputSnap  99  
 
