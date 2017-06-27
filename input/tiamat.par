@@ -2,11 +2,11 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       with_own_metals
-OutputDir              /lustre/projects/p004_swin/jseiler/tmp/
+FileNameGalaxies       fiducial 
+OutputDir              /lustre/projects/p004_swin/jseiler/tiamat/
 
 FirstFile         0
-LastFile          124
+LastFile          26
 
 
 %------------------------------------------
@@ -16,17 +16,17 @@ LastFile          124
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
--> 100 
+-> 163
 
 
 %------------------------------------------
 %----- Simulation information  ------------
 %------------------------------------------
 
-TreeName              lhalotree.bin   ; assumes the trees are named TreeName.n where n is the file number
-SimulationDir        /lustre/projects/p004_swin/jseiler/Rockstar_output/1024_Halos_noLL/Ltrees 
-FileWithSnapList      /home/jseiler/SAGE-stuff/input/MySim.alist
-LastSnapShotNr        100
+TreeName              subgroup_trees   ; assumes the trees are named TreeName.n where n is the file number
+SimulationDir         /lustre/projects/p070_astro/gpoole/Simulations/Tiamat/trees/version_nominal_res/vertical/
+FileWithSnapList      /lustre/projects/p070_astro/gpoole/Simulations/Tiamat/trees/version_nominal_res/a_list.txt
+LastSnapShotNr        163 
 
 Omega           0.308
 OmegaLambda     0.692
@@ -38,7 +38,7 @@ PartMass        0.0636717
 BoxSize		100	
 GridSize	128
 
-use_tiamat	0
+use_tiamat 	1
 %------------------------------------------
 %----- SAGE recipe options ----------------
 %------------------------------------------
@@ -59,7 +59,7 @@ SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
 
-IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
+IRA 			    1     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
 TimeResolutionSN	    5     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
