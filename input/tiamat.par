@@ -16,7 +16,7 @@ LastFile          26
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
--> 101 
+-> 163
 
 
 %------------------------------------------
