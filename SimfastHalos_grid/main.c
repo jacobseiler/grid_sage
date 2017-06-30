@@ -75,15 +75,13 @@ double randn (double mu, double sigma)
 
 int malloc_grid(float **Grid, int GridSize)
 {
-  int i;
   int status = 0;
 
-  //if (ThisTask_GridNr == 0) // Only need to malloc the grid once.
-  //  Grid = mymalloc(sizeof(struct GRID)*CUBE(GridSize));
+  fprintf(stderr, "Mallocing the grid.\n");
 
   *Grid = NULL;
   *Grid = (float *)malloc(sizeof(float)*GridSize*GridSize*GridSize);
-
+  fprintf(stderr, "Malloced.\n");
   if(*Grid == NULL)
   {
     status = 1; 
@@ -93,15 +91,16 @@ int malloc_grid(float **Grid, int GridSize)
   
 }
 
-void init_grid(float **Grid, int GridSize)
+void init_grid(float *Grid, int GridSize)
 {
-  int i;
+  fprintf(stderr, "Setting grid to 0\n");
+  long int i;
   for (i = 0; i < GridSize*GridSize*GridSize; ++i)
   {
   
-    *Grid[i] = 0.000;
+    Grid[i] = 0.000;
   }
-
+  fprintf(stderr, "Initalized\n");
 }
 
 int main(int argc, char **argv)
@@ -128,7 +127,7 @@ int main(int argc, char **argv)
   char line[MAXLEN];
 
   int full_ngrid = 512; // Number of cells (along an axis) of the full resolution grid.
-  int smooth_ngrid = 128; // Number of cells (along an axis) for the smoothed grid.
+  int smooth_ngrid = 512; // Number of cells (along an axis) for the smoothed grid.
   float conversion = (float) smooth_ngrid/ (float) full_ngrid;
 
   char halofile[MAXLEN]; 
@@ -161,26 +160,19 @@ int main(int argc, char **argv)
 
   for(z = z_high; z > z_low - dz; z -= dz)
   {
-    if(count == 0)
+    if(count == 0) // Only need to allocate memory once.
     {
-/*
+
       if(malloc_grid(&Nion, smooth_ngrid) == 1)
       {
         fprintf(stderr, "Malloc of Nion grid failed.\n");
 	exit(0);
       }  
-*/
-     Nion = malloc(sizeof(float)*smooth_ngrid*smooth_ngrid*smooth_ngrid);
+
     }
     
-  //  init_grid(&Nion, smooth_ngrid);
-
-    for (i = 0; i < smooth_ngrid*smooth_ngrid*smooth_ngrid; ++i)
-    {
-      Nion[i] = 0.000;
-    }
-
-   
+    init_grid(Nion, smooth_ngrid); // Sets the Nion grid to all 0s. 
+ 
     // Reading in the Ngamma Means // 
 
     snprintf(mvir_fit_file, MAXLEN, "%s/mean_mvir_ngammafesc_z%.3f.dat", mvir_fit_basedir, mvir_fit_z[count]);
@@ -198,7 +190,6 @@ int main(int argc, char **argv)
 	continue; 
       sscanf(line, "%lf", &mean);
       mvir_ngamma_mean[ngamma_counter] = mean; 
-  //    fprintf(stderr, "mvir_ngamma_mean[%d] = %.4e\n", ngamma_counter, mean);
       ngamma_counter++;
     } 
     fclose(fd);
@@ -280,21 +271,16 @@ int main(int argc, char **argv)
 
       for(j = 0; j < 59; ++j)
       {
-//	fprintf(stderr, "j = %d, bin = %.4e\n", j, mvir_bin[j]);	
         if(log10(halo_v[i].Mass) > mvir_bin[j] && log10(halo_v[i].Mass) < mvir_bin[j+1])
         {
 
-//          fprintf(stderr, "j = %d, bin = %.4e, Mvir = %.4e, bin_mean = %.4e\n", j, mvir_bin[j], log10(halo_v[i].Mass), mvir_ngamma_mean[j]);
 	  mean = log10(mvir_ngamma_mean[j]);
           std = 0.484 * (mvir_ngamma_std[j]/mvir_ngamma_mean[j]);
 
-//	  fprintf(stderr, "Mean = %.4e, std = %.4e\n", log10(mvir_ngamma_mean[j]), 0.484 * (mvir_ngamma_std[j]/mvir_ngamma_mean[j]));
-	  if(mean > 0.0)
-          {
-//	  fprintf(stderr, "Mean = %.4e, std = %.4e\n", log10(mvir_ngamma_mean[j]), 0.484 * (mvir_ngamma_std[j]/mvir_ngamma_mean[j]));
 
+	  if(mean > 0.0) // If our fit had no Halos in this mass bin then the input would 'Nan'. 
+          {
             Nion_tmp = randn(log10(mvir_ngamma_mean[j]), 0.484 * (mvir_ngamma_std[j]/mvir_ngamma_mean[j]));
-//	  fprintf(stderr, "Nion = %.4e\n", Nion_tmp);
           } 
           else
           { 
@@ -307,8 +293,7 @@ int main(int argc, char **argv)
 
       if (Nion_tmp > 0 && Nion_tmp < 70.0) 
       {
-        Nion[idx] += Nion_tmp;
-        fprintf(stderr, "Nion_tmp = %.4e, pow(10, Nion_tmp) = %.4e, cell value = %.4e\n", Nion_tmp, pow(10, Nion_tmp), Nion[idx]);
+        Nion[idx] += pow(10, Nion_tmp)/1.0e50;
       }
       Nion_tmp = 0;
     }
@@ -321,8 +306,7 @@ int main(int argc, char **argv)
 
     for(i = 0; i < smooth_ngrid*smooth_ngrid*smooth_ngrid; ++i)
     {
-      if(Nion[i] > 0.0 && Nion[i] < 1e70)
-	fprintf(stderr, "At write %.4e\n", Nion[i]);
+//	fprintf(stderr, "At write %.4e\n", Nion[i]);
       fwrite(&Nion[i], sizeof(float), 1, fd);
     }
     fprintf(stderr, "Saved to file %s\n", outfile);
