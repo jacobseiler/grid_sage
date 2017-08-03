@@ -242,19 +242,19 @@ int main(int argc, char **argv)
     for (i = 0; i < Nhalos; ++i)
     {
       
-      float grid_x = halo_v[i].x*conversion;
+      int grid_x = halo_v[i].x*conversion;
       if(grid_x > smooth_ngrid - 1)
 	grid_x = smooth_ngrid - 1;
       if(grid_x < 0)
 	grid_x = 0;
 
-      float grid_y = halo_v[i].y*conversion;
+      int grid_y = halo_v[i].y*conversion;
       if(grid_y > smooth_ngrid - 1)
 	grid_y = smooth_ngrid - 1;
       if(grid_y < 0)
 	grid_y = 0;
 
-      float grid_z = halo_v[i].z*conversion;
+      int grid_z = halo_v[i].z*conversion;
       if(grid_z > smooth_ngrid - 1)
 	grid_z = smooth_ngrid- 1;
       if(grid_z < 0)
