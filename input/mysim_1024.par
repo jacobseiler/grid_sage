@@ -2,8 +2,8 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       test 
-OutputDir              /lustre/projects/p004_swin/jseiler/tmp/
+FileNameGalaxies       IRA_smalltest 
+OutputDir              /lustre/projects/p004_swin/jseiler/18month/
 
 FirstFile         0
 LastFile          124
