@@ -1,0 +1,38 @@
+HBT requires both the particle snapshots in addition to the FoF catalogue to build its trees.
+It currently supports two readers, GADGET and Apostle formats.  
+    In our case since the outputs are hdf5 files, the Apostle reader would be the best.
+Apostle reader requires header data (duhhhh) that tells it things.  Specifically, FOR BOTH PARTICLE SNAPSHOTS AND FOF CATALOGUE, the header requires:
+    NumFilesPerSnapshot
+    BoxSize (in internal units, which is set to Mpc/h)
+    Scale Factor
+    Omega0
+    OmegaLambda
+    Table of Particle Masses
+    Number of particles in this file
+    Number of particles in total
+    The most significant word of the 64-bit total particle numbers
+
+Then once the reader has loaded in the header it syncs across all MPI tasks, and then loads in the snapshot proper. For each particle it reads
+    3 Coordinates (x, y, z) (Mpc/h)
+    3 Velocities (x, y, z) (km/s)
+    Particle ID
+    Particle Mass (Optional as the script will pull this from the header if not explicitly given).
+    <<Since we are doing DM only simulation these are the only properties necessary.  A full hydrosim would specify internal energy as well.>>
+
+After the particle snapshot it then reads the FoF catalogue.  Again, it reads the header file first with the previously specified format. Then for each FoF halo it reads
+    3 Coordinates (x, y, z) (Mpc/h)
+    3 Velocities (x, y, z) (km/s)
+    Particle IDs
+    Particle Mass (Optional as the script will pull this from the header if not explicitly given).
+    <<Since we are doing DM only simulation these are the only properties necessary.  A full hydrosim would specify internal energy as well.>>
+    It also reads this 'GroupNumber' variable which I'm not sure about.  It assigns a HaloID to each particle with a negative number denoting that the particle is unbound.  
+
+
+Things to Do:
+    None of the files that Britton have given us contain data in the headers.  Need to populate each file with a header.
+    Confirm what exactly the 'Particles' are for the 'ReadGroups' routine.
+
+Question: Where is 'TypeMax' specified.  I know it means the number of different particle types (4 in our case) but I can't see where you specify that.
+Question: When it reads in the 'GroupParticles' is this the particles that comprise the halo itself, or is the halo being treated as a 'particle'.
+    e.g. If a snapshot has 30 halos each with 100 particles, is the number of 'particles' we need to read in for the groups going to be 30 or 30*100 = 30,000? 
+    I believe it's actually reading in the 30,000?  We don't have this so may have to change it slightly...
