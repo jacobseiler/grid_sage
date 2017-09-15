@@ -7,10 +7,10 @@ Apostle reader requires header data (duhhhh) that tells it things.  Specifically
     Scale Factor
     Omega0
     OmegaLambda
-    Table of Particle Masses
-    Number of particles in this file
-    Number of particles in total
-    The most significant word of the 64-bit total particle numbers
+    Table of Particle Masses (i.e., mass of each particle type)
+    Number of particles in this file (of each type)
+    Number of particles in total (of each type)
+    The most significant word of the 64-bit total particle numbers (of each type)
 
 Then once the reader has loaded in the header it syncs across all MPI tasks, and then loads in the snapshot proper. For each particle it reads
     3 Coordinates (x, y, z) (Mpc/h)
@@ -36,3 +36,35 @@ Question: Where is 'TypeMax' specified.  I know it means the number of different
 Question: When it reads in the 'GroupParticles' is this the particles that comprise the halo itself, or is the halo being treated as a 'particle'.
     e.g. If a snapshot has 30 halos each with 100 particles, is the number of 'particles' we need to read in for the groups going to be 30 or 30*100 = 30,000? 
     I believe it's actually reading in the 30,000?  We don't have this so may have to change it slightly...
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+Update from Friday.
+
+It seems that the files DO contain header data.  But rather than the information being stored in explicit subgroups, it is instead stored as 'Attributes'.  
+Going to do a check to make sure each file (snapshot and FoF groups) contains all the necessary header attributes.
+
+---------------- SNAPSHOT HEADER FILES ------------------------
+NumFilesPerSnapshot : Yes 
+BoxSize : Yes (CHECK UNITS HERE. The file says '1600' so need to make sure if it's Mpc or Mpc/h)
+Scale Factor : Kind of.  The scale factor is saved as the attribute 'Time'
+Omega0 : Yes
+OmegaLambda : Yes
+Table of Particle Masses : Yes
+Number of particles in this file (of each type) : Yes
+Number of total particles (of each type) : Yes
+Most significant word : Yes 
+
+
+---------------- GROUP HEADER FILES ------------------------
+Within the Apostle reader, the group files must have the same header format as the Snapshot files.
+
+NumFilePerSnapshot : Kind of.  Saved as the attribute 'NumFiles'
+BoxSize : Yes (CHECK UNITS the same as the Snapshot file)
+Scale Factor : Kind of.  Saved as the attribute 'Time'
+Omega0 : Yes
+OmegaLambda : Yes
+Table of Particle Masses : No
+Number of particles in this file (of each type) : No
+Number of total particles (of each type) : No
+Most significant word : No 

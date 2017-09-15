@@ -18,7 +18,7 @@ snaplow = 8
 snaphigh = 10
 num_cores = 256
 filepath = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721228/dm_gadget/data/'
-TypeMax = 5
+TypeMax = 6
 
 def write_fof_header(snapshot_idx):
 
@@ -48,52 +48,40 @@ def write_fof_header(snapshot_idx):
 def write_snapshot_header(snapshot_idx):
 
     '''
-    numpart = np.zeros((TypeMax), dtype = np.int64)
+    numpart_total = np.zeros((TypeMax), dtype = np.int64)
     for core_idx in xrange(0, num_cores):    
+        numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
+
         tmp = "snapdir_%03d/snapshot_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
         fname = filepath + tmp
  
         with h5py.File(fname, 'r') as f:
-
             for type_idx in xrange(0, TypeMax):
-               tmp = "PartType%d" %(type_idx + 1)
+               tmp = "PartType%d" %(type_idx)
                try: 
                    part = f[tmp]['Coordinates']
                except KeyError:
                    pass
                else:
-                   numpart[type_idx - 1] += np.shape(part)[0]
+                   numpart_total[type_idx] += np.shape(part)[0] # Running total for number of particles in this snapshot.
+                   numpart_thisfile[type_idx] = np.shape(part)[0] # Number of particles for this file.
+            try:
+                 
+            except KeyError:
+                pass # If it hasn't been created, move on.
+            else:
+                del f['Header']['NumPartThisFile'] # If it has, delete all datasets within the header group so we can update them. 
+            
+            dset = f.create_dataset("Header/NumPartThisFile", (TypeMax,), dtype = np.int32, data = numpart_thisfile) # Write the new header to the file.
     '''     
     ## At this point we have the number of particles (of each type) within this snapeshot. ##
+    ## We have also written the Header folder containing the number of particles contained within each file. ##
 
-    core_idx = 100
-    tmp = "snapdir_%03d/snapshot_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
-    fname = filepath + tmp
+    # Now open up each file once again to write out the final header fields.
 
-    fname = "/lustre/projects/p004_swin/jseiler/britton_stuff/snapshot_007.229.hdf5"
-    with h5py.File(fname, 'r+') as f:
+    for core_idx in xrange(0, num_cores):
         
-        numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
-        for type_idx in xrange(0, TypeMax):
-            tmp = "PartType%d" %(type_idx + 1)
-            try: 
-                part = f[tmp]['Coordinates']
-            except KeyError:
-                pass
-            else:  
-                numpart_thisfile[type_idx] = np.shape(part)[0]            
-             
-        try:
-            tmp = f['Header']['NumPartThisFile'] 
-        except KeyError:
-            pass
-        else:
-            del f['Header']['NumPartThisFile']
-            
-        dset = f.create_dataset("Header/NumPartThisFile", (TypeMax,), dtype = np.int32, data = numpart_thisfile)
-
-    with h5py.File(fname, 'r') as f:
-        print f['Header']['NumPartThisFile']
+        
 
 if __name__ == '__main__':
 
