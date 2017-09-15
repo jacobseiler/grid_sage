@@ -22,28 +22,56 @@ TypeMax = 6
 
 def write_fof_header(snapshot_idx):
 
-    numpart = np.zeros((TypeMax), dtype = np.int32)
-    for core_idx in xrange(0, num_cores):    
-        tmp = "groups_%03d/fof_tab_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
-        fname = filepath + tmp
+    tmp = "snapdir_000/snapshot_000.0.hdf5"
+    fname = filepath + tmp
 
-        with h5py.File(fname, 'r') as f:
-            try:
+#    mass_table = np.zeros((TypeMax), dtpye = np.float32)
+
+    with h5py.File(fname, 'r') as f: 
+        mass_table = f['Header'].attrs['MassTable']
+       
+    
+    numpart_total = np.zeros((TypeMax), dtype = np.int64)
+    for core_idx in xrange(0, num_cores):
+        numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
+        #tmp = "groups_%03d/fof_tab_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx) 
+        #fname = filepath + tmp
+ 
+        tmp = "/lustre/projects/p134_swin/jseiler/tinkering/groups_045/fof_tab_045.%d.hdf5" %(core_idx) # Directory for writable files.
+        fname = tmp 
+
+        with h5py.File(fname, 'r+') as f:
+            try: 
                 grouplen = f['Group']['GroupLenType']
             except KeyError:
                 pass
             else:
-                if (np.shape(grouplen)[1] != TypeMax): # Ensure that we're getting the correct number of particle entries.
-                    raise ValueError("For file %s GroupLenType had %d entries for the number of particle types when we expect there to be %d." %(fname, np.shape(grouplen)[1], TypeMax))
-                 
-                local_numpart = np.sum(grouplen[:], axis = 0) # Sums each particle type for this core.
-                local_numpart.astype(np.int32) # Recast as explicit integer.
-              
-                numpart = np.add(numpart,local_numpart) # Add to running total for this snapshot.
-        
-    ## At this point we have the number of particles (of each type) within this snapshot. ## 
+                local_numpart = np.sum(grouplen[:], axis = 0) # Sums each particle type for this file.
+                local_numpart.astype(np.int32) # Recast as explicit integer
+                numpart_total = np.add(numpart_total, local_numpart)
 
-    exit()
+            f['Header'].attrs.create("NumPart_ThisFile", local_numpart, dtype = np.int32)
+            f['Header'].attrs.create("MassTable", mass_table, dtype = np.float32)
+            print "Done ThisFile stuff for Core %d" %(core_idx)
+    ## At this point numpart_total contains the total number of particles (of each type) for the groups within the snapshot. ## 
+
+    for core_idx in xrange(0, num_cores):
+        numpart_highword = np.zeros((TypeMax), dtype = np.int32)
+        #tmp = "groups_%03d/fof_tab_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx) 
+        #fname = filepath + tmp
+ 
+        tmp = "/lustre/projects/p134_swin/jseiler/tinkering/groups_045/fof_tab_045.%d.hdf5" %(core_idx) # Directory for writable files.
+        fname = tmp 
+
+        with h5py.File(fname, 'r+') as f:
+            f['Header'].attrs.create("NumPart_Total", numpart_total, dtype = np.int32) # Least significant 32 bits of total number of particles.
+            
+            for type_idx in xrange(0, TypeMax):
+                if numpart_total[type_idx] > pow(2, 32) - 1:
+                    numpart_highword[type_idx] = numpart_total[type_idx] >> 32
+            
+            f['Header'].attrs.create("NumPart_Total_HighWord", numpart_highword, dtype = np.int32) # Least significant 32 bits of total number of particles.
+            print "Done Total stuff for Core %d" %(core_idx)                
 
 def write_snapshot_header(snapshot_idx):
 
@@ -79,12 +107,12 @@ def write_snapshot_header(snapshot_idx):
 
     # Now open up each file once again to write out the final header fields.
 
-    for core_idx in xrange(0, num_cores):
+    
         
         
 
 if __name__ == '__main__':
 
     for snapshot_idx in xrange(snaplow, snaphigh + 1):
-        #write_fof_header(snapshot_idx) 
-        write_snapshot_header(snapshot_idx)
+        write_fof_header(snapshot_idx) 
+        #write_snapshot_header(snapshot_idx)
