@@ -85,8 +85,8 @@ def plot_halos(filepath, snapshot_idx):
     if (have_fof == 1):
         (counts, bin_edges, bin_middle) = AllVars.Calculate_Histogram(mass, bin_width, 0)
         
-        # Box is [770, 825]
-        ax2.plot(bin_middle,  counts / pow(825.0-770.0,3) / bin_width / pow(10,bin_middle), ls = '-', color = 'r', linewidth = PlotScripts.global_linewidth)
+        # Box is [774, 831]
+        ax2.plot(bin_middle,  counts / pow(831.0-774.0,3) / bin_width / pow(10,bin_middle), ls = '-', color = 'r', linewidth = PlotScripts.global_linewidth)
     ax2.set_yscale('log', nonposy='clip')
 #    ax2.set_ylim([1e-4, 2e-1])
     ax2.set_xlim([6.0, 11.0])
@@ -105,6 +105,43 @@ def plot_halos(filepath, snapshot_idx):
     print 'Saved file to', outputFile
     plt.close()
 
+def check_bounds(filepath, snapshot_idx):
+
+    min_x = [1e10, 1e10, 1e10, 1e10]
+    max_x = [-1e10, -1e10, -1e10, -1e10]
+
+    min_y = [1e10, 1e10, 1e10, 1e10]
+    max_y = [-1e10, -1e10, -1e10, -1e10]
+
+    min_z = [1e10, 1e10, 1e10, 1e10]
+    max_z = [-1e10, -1e10, -1e10, -1e10] 
+
+    for core_idx in xrange(0, 100):
+
+        tmp = "snapdir_%03d/snapshot_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
+        fname = filepath + tmp
+        print fname
+        with h5py.File(fname, 'r') as f:
+
+            for part_idx in xrange(1, 5):
+                tmp = "PartType%d" %(part_idx)
+            
+                try:    
+                    part = f[tmp]['Coordinates']
+                except KeyError:
+                    pass
+                else:
+                    local_x_min = min(part[:,0])
+                    local_x_max = max(part[:,0])
+                    if(local_x_min < min_x[part_idx - 1]):
+                        min_x[part_idx - 1] = local_x_min
+                        print "New x min", local_x_min
+                    if(local_x_max > max_x[part_idx -1]):
+                        max_x[part_idx - 1] = local_x_max
+                        print "New x max", local_x_max
+
+    print "For snapshot ", snapshot_idx, "the smallest x coorindate is ", min_x, "and maximum is ", max_x, "(for each particle type)" 
+
 if __name__ == '__main__':
 
     PlotScripts.Set_Params_Plot()
@@ -112,4 +149,5 @@ if __name__ == '__main__':
 
     for snapshot_idx in xrange(0, 131):
         #plot_snapshot(filepath, snapshot_idx)
-        plot_halos(filepath, snapshot_idx) 
+        #plot_halos(filepath, snapshot_idx)
+        check_bounds(filepath, snapshot_idx) 

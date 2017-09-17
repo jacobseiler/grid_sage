@@ -176,7 +176,7 @@ if __name__ == '__main__':
 			else:
 				update_progenitors(Halos, Galaxies, i, descendant_galaxy) # Otherwise we need to update the pointers to be mass ordered.
 
-		## FOF Group Claculation ##
+		## FOF Group Calculation ##
 		central_galaxy = Galaxies['CentralGal'][i] # Galaxy index for the central galaxy of the FoF group.
 	
 		assert(Galaxies['GhostFlag'][central_galaxy] == 0) # We assume that a normal non-ghost galaxy cannot have a ghost-galaxy as it's centralgal.  
