@@ -53,6 +53,7 @@ def write_fof_header(snapshot_idx):
             f['Header'].attrs.create("NumPart_ThisFile", local_numpart, dtype = np.int32)
             f['Header'].attrs.create("MassTable", mass_table, dtype = np.float32)
             print "Done ThisFile stuff for Core %d" %(core_idx)
+
     ## At this point numpart_total contains the total number of particles (of each type) for the groups within the snapshot. ## 
 
     for core_idx in xrange(0, num_cores):
@@ -70,8 +71,48 @@ def write_fof_header(snapshot_idx):
                 if numpart_total[type_idx] > pow(2, 32) - 1:
                     numpart_highword[type_idx] = numpart_total[type_idx] >> 32
             
-            f['Header'].attrs.create("NumPart_Total_HighWord", numpart_highword, dtype = np.int32) # Least significant 32 bits of total number of particles.
+            f['Header'].attrs.create("NumPart_Total_HighWord", numpart_highword, dtype = np.int32) # Most significant bits of total number of particles (if Number of particles is greater than 2^32 - 1). 
             print "Done Total stuff for Core %d" %(core_idx)                
+
+def write_fof_groups(snapshot_idx):
+
+
+    for core_idx in xrange(0, num_cores):
+        numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
+        #tmp = "groups_%03d/fof_tab_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx) 
+        #fname = filepath + tmp
+ 
+        tmp = "/lustre/projects/p134_swin/jseiler/tinkering/groups_045/fof_tab_045.%d.hdf5" %(core_idx) # Directory for writable files.
+        fname = tmp 
+
+        with h5py.File(fname, 'r+') as f:
+            try: 
+                grouptype = f['IDs']['MemberType']
+                grouplen = f['Group']['GroupLenType']
+            except KeyError:
+                pass
+            else:
+                for type_idx in xrange(0, TypeMax):
+                    idx = np.where(grouptype[:] == type_idx)[0].tolist() # Need to convert this to a list so h5py can handle slicing.
+                    if len(idx) == 0:
+                        continue
+                   
+                    print len(idx) 
+                    pos = f['IDs']['MemberPos'][idx]
+                    vel = f['IDs']['MemberVel'][idx]
+
+                    groupID = np.zeros((len(idx)), dtype = np.int32)
+                    offset = 0
+                    for groupID_idx in xrange(0, np.shape(grouplen)[0]): # Loops over the number of FoF groups are in this file.
+                        groupID[offset : grouplen[groupID_idx, type_idx] + offset] = groupID_idx # This assigns the number of particles of this type a group ID. 
+                        print grouplen[groupID_idx, type_idx]
+                        print groupID_idx
+                        print offset 
+                        offset += grouplen[groupID_idx, type_idx]  
+                    print groupID
+                    exit()
+
+    
 
 def write_snapshot_header(snapshot_idx):
 
@@ -114,5 +155,6 @@ def write_snapshot_header(snapshot_idx):
 if __name__ == '__main__':
 
     for snapshot_idx in xrange(snaplow, snaphigh + 1):
-        write_fof_header(snapshot_idx) 
+        #write_fof_header(snapshot_idx) 
+        write_fof_groups(snapshot_idx)
         #write_snapshot_header(snapshot_idx)

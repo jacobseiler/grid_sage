@@ -4,7 +4,7 @@ It currently supports two readers, GADGET and Apostle formats.
 Apostle reader requires header data (duhhhh) that tells it things.  Specifically, FOR BOTH PARTICLE SNAPSHOTS AND FOF CATALOGUE, the header requires:
     NumFilesPerSnapshot
     BoxSize (in internal units, which is set to Mpc/h)
-    Scale Factor
+    Scale Factor (Time)
     Omega0
     OmegaLambda
     Table of Particle Masses (i.e., mass of each particle type)
@@ -47,7 +47,7 @@ Going to do a check to make sure each file (snapshot and FoF groups) contains al
 ---------------- SNAPSHOT HEADER FILES ------------------------
 NumFilesPerSnapshot : Yes 
 BoxSize : Yes (CHECK UNITS HERE. The file says '1600' so need to make sure if it's Mpc or Mpc/h)
-Scale Factor : Kind of.  The scale factor is saved as the attribute 'Time'
+Time : Yes 
 Omega0 : Yes
 OmegaLambda : Yes
 Table of Particle Masses : Yes
@@ -61,7 +61,7 @@ Within the Apostle reader, the group files must have the same header format as t
 
 NumFilePerSnapshot : Kind of.  Saved as the attribute 'NumFiles'
 BoxSize : Yes (CHECK UNITS the same as the Snapshot file)
-Scale Factor : Kind of.  Saved as the attribute 'Time'
+Time : Yes
 Omega0 : Yes
 OmegaLambda : Yes
 Table of Particle Masses : No

@@ -2,9 +2,14 @@
 import matplotlib
 matplotlib.use('Agg')
 
+import astropy
+
+
 import h5py
 import numpy as np
 import pylab as plt
+from hmf import MassFunction
+from hmf import cosmo
 from random import sample
 
 import sys
@@ -57,12 +62,15 @@ def plot_snapshot(filepath, snapshot_idx):
 
 def plot_halos(filepath, snapshot_idx):
 
-    ax1 = plt.subplot(211)
-    ax2 = plt.subplot(212)
+    my_cosmo = cosmo.Cosmology(cosmo_model=
+
+
+    #ax1 = plt.subplot(211)
+    ax2 = plt.subplot(111)
     
     mass = [] 
 
-    have_fof = 0
+    have_fof = 1
     for core_idx in xrange(0, 256):
         
         tmp = "groups_%03d/fof_tab_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
@@ -78,7 +86,7 @@ def plot_halos(filepath, snapshot_idx):
                 have_fof = 1
                 print "Found %d groups for snapshot %d, Core %d" %(len(position), snapshot_idx, core_idx)
 
-                ax1.scatter(position[:,0], position[:,1], marker = 'o', alpha = 0.5, color = 'r')
+                #ax1.scatter(position[:,0], position[:,1], marker = 'o', alpha = 0.5, color = 'r')
                 for i in xrange(0, len(position)):
                     mass.append(np.log10(f['Group']['GroupMass'][i] * 1.0e10))
 
@@ -93,11 +101,11 @@ def plot_halos(filepath, snapshot_idx):
     ax2.set_xlabel(r"$\log_{10}\mathrm{M}_\mathrm{H} \: [\mathrm{M}_\odot]$", fontsize = PlotScripts.global_fontsize)
     ax2.set_ylabel(r'$\left(\frac{dn}{dM}\right) [\mathrm{Mpc}^{-3}\: \mathrm{M}_\odot^{-1}]$', fontsize = PlotScripts.global_fontsize)
 
-    ax1.set_xlim([775, 830])
-    ax1.set_ylim([765, 830])
+    #ax1.set_xlim([775, 830])
+    #ax1.set_ylim([765, 830])
 
-    ax1.set_xlabel(r"$\mathrm{x} \: [\mathrm{Mpc}]$")
-    ax1.set_ylabel(r"$\mathrm{y} \: [\mathrm{Mpc}]$")
+    #ax1.set_xlabel(r"$\mathrm{x} \: [\mathrm{Mpc}]$")
+    #ax1.set_ylabel(r"$\mathrm{y} \: [\mathrm{Mpc}]$")
 
     plt.tight_layout()
     outputFile = './halo_1721228/%d%s' %(snapshot_idx, output_format) 
@@ -149,5 +157,5 @@ if __name__ == '__main__':
 
     for snapshot_idx in xrange(0, 131):
         #plot_snapshot(filepath, snapshot_idx)
-        #plot_halos(filepath, snapshot_idx)
-        check_bounds(filepath, snapshot_idx) 
+        plot_halos(filepath, snapshot_idx)
+        #check_bounds(filepath, snapshot_idx) 
