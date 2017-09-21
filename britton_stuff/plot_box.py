@@ -32,22 +32,26 @@ def plot_snapshot(filepath, snapshot_idx):
 
     with h5py.File(fname, 'r') as f:
 
-        for i in xrange(1, 5):
-            tmp = "PartType%d" %(i)
-            part = f[tmp]['Coordinates']
-
-            if(len(part) > dilute): 
-                w = sample(np.arange(0, len(part)), dilute) 
-                w = np.sort(w)
-            else:
-                w = np.arange(0, len(part))  
-           
-            print "The x coords range from [%.4f, %.4f]" %(min(part[:,0]), max(part[:,0]))
-            print "The y coords range from [%.4f, %.4f]" %(min(part[:,1]), max(part[:,1]))
-            print "The z coords range from [%.4f, %.4f]" %(min(part[:,2]), max(part[:,2]))
-            
-            ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[i-1])
+        for i in xrange(0, 6):
             print "plotting ParticleType %d" %(i)
+            tmp = "PartType%d" %(i)
+            try:
+                part = f[tmp]['Coordinates']
+            except KeyError:
+                pass
+            else:
+                if(len(part) > dilute): 
+                    w = sample(np.arange(0, len(part)), dilute) 
+                    w = np.sort(w)
+                else:
+                    w = np.arange(0, len(part))  
+               
+                print "The x coords range from [%.4f, %.4f]" %(min(part[:,0]), max(part[:,0]))
+                print "The y coords range from [%.4f, %.4f]" %(min(part[:,1]), max(part[:,1]))
+                print "The z coords range from [%.4f, %.4f]" %(min(part[:,2]), max(part[:,2]))
+                
+                ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[i-1])
+
 
     ax1.set_xlim([760, 830])
     ax1.set_ylim([760, 830])
@@ -62,7 +66,7 @@ def plot_snapshot(filepath, snapshot_idx):
 
 def plot_halos(filepath, snapshot_idx):
 
-    my_cosmo = cosmo.Cosmology(cosmo_model=
+
 
 
     #ax1 = plt.subplot(211)
@@ -156,6 +160,6 @@ if __name__ == '__main__':
     filepath = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721228/dm_gadget/data/'
 
     for snapshot_idx in xrange(0, 131):
-        #plot_snapshot(filepath, snapshot_idx)
-        plot_halos(filepath, snapshot_idx)
+        plot_snapshot(filepath, snapshot_idx)
+        #plot_halos(filepath, snapshot_idx)
         #check_bounds(filepath, snapshot_idx) 
