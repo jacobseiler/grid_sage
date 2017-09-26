@@ -26,7 +26,7 @@ comm= MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-snaplow = 7
+snaplow = 0
 snaphigh = 30
 num_cores = 256
 #filepath = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721228/dm_gadget/data/'
@@ -173,6 +173,10 @@ def link_fof_snapshot(snapshot_idx):
 
     numpart_allfiles = np.zeros((TypeMax), dtype = np.int64) 
 
+    groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for each group.
+    fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
+    particle_groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for the matched snapshot particles.    
+ 
     if len(ds.field_list) == 0: # If there aren't any groups in this file, then we skip all the linking.  Note we still need to create files to say there aren't any groups.
         num_groups = 0 
     else:
@@ -180,19 +184,11 @@ def link_fof_snapshot(snapshot_idx):
         num_particles_per_group = np.zeros((num_groups), dtype = np.int32)
         print("For snapshot {0} there are {1} groups.".format(snapshot_idx, num_groups))
 
-        particle_position = [[] for x in range(TypeMax)]
-        particle_velocity = [[] for x in range(TypeMax)]
-        particle_id = [[] for x in range(TypeMax)]
-        particle_groupid = [[] for x in range(TypeMax)]
-
         ## Now the data format of the snapshot is split into the ParticleType groups. ##
         ## E.g. The IDs of only particle type 1 is stored in a 'PartType1' group. ##
         ## Hence we don't want to try and be searching for the ID of a particle type 2 within the particle type 1 group. ##
         ## So we need to store information about the particles in length 'TypeMax' lists. ##
-
-        groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for each group.
-        fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
-        
+ 
         for group_idx in range(0, num_groups): # Loop over each group.
             halo = ds.halo('Group', group_idx) # Loads all the information for the specified group.
             num_particles_per_group[group_idx] = halo['member_ids'].shape[0]
@@ -210,134 +206,80 @@ def link_fof_snapshot(snapshot_idx):
 #    cores = [118]
     for core_idx in range(0 + rank, num_cores, size): 
     #for core_idx in cores: 
-        numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
- 
+        snapshot_groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for the particles within each snapshot.
         tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
         fname = filepath + tmp 
 
         print("Doing chunk {0}".format(core_idx))
-        with h5py.File(fname, 'r') as f: 
+        with h5py.File(fname, 'r') as f:
 
-            ## First grab some attributes that will be used for this snapshot. ##
+            NumPart_ThisFile = f['Header'].attrs['NumPart_ThisFile']
+ 
+            for type_idx in range(0, TypeMax):
+                print("Doing PartType {0}".format(type_idx))
+                tmp = 'PartType{0}'.format(type_idx)
 
-            BoxSize = f['Header'].attrs['BoxSize'] # Size of the simulation box (in Mpc/h).
-            Time = f['Header'].attrs['Time']            
-            Omega_m = f['Header'].attrs['Omega0'] # Matter density.
-            Omega_l = f['Header'].attrs['OmegaLambda'] # Dark energy density.
-            particle_mass = f['Header'].attrs['MassTable'] # Table of particle masses (length equal to TypeMax)
 
-            if num_groups > 0:
-                for type_idx in range(0, TypeMax):
+                try:
+                    particles = f[tmp]
+                except KeyError:
+                    pass
+                else:
                     if len(fof_partid[type_idx]) > 0:
-                        print("Doing PartType {0}".format(type_idx))
-                        tmp = 'PartType{0}'.format(type_idx)
-                        try:
-                            particles = f[tmp]
-                        except KeyError:
-                            pass
-                        else:
-                            snapshot_partid = particles['ParticleIDs']
-                            
-                            print("Our key list (FoF Particle IDs) has length {0} and our match list (Snapshot Particle IDs) has length {1}".format(len(fof_partid[type_idx]), len(snapshot_partid)))
-         
-                            ids_found = np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)) # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns only 'Trues'.  
-                                                                                                                         # Hence 'ids_found' will be the snapshot particle INDICES for those particles in the FoF group.
-                                                                                                                         # Taken from https://stackoverflow.com/questions/11483863/python-intersection-indices-numpy-array.
-                            ids_found = ids_found[0].tolist() # Need to explicitly recast as a list for work with h5py.
-                            ## Now we've found any matching IDs we need to grab the particles position/velocity. ##
-                            if len(ids_found) > 0: # Checks to see if any matching IDs were found.
-                                print(ids_found)                            
-                                particle_position[type_idx].append(particles['Coordinates'][ids_found]) # For some super weird reason this needs 3 indices to properly reference.  I.e. particle_position[1][0] will return all the coordinates for Particle Type 1.
-                                particle_velocity[type_idx].append(particles['Velocities'][ids_found])
-                                particle_id[type_idx].append(particles['ParticleIDs'][ids_found])
-
-                                ## Finally we need to grab the correct FoF group ID so we need to know which Snapshot Particle matched with which FoF Particle.  Then we use the index of where the FoF Particle is to grab the correct groupid. ##
-                                fof_partid_idx = np.int32(np.nonzero(np.in1d(fof_partid[type_idx], snapshot_partid, assume_unique = True))[0]) 
-
-                                groupids_added = []
-                                sum_parts = 0
-                                for i in fof_partid_idx: 
-                                    particle_groupid[type_idx].append(groupid[type_idx][i])
-                                    if (groupid[type_idx][i] in groupids_added) == False:
-                                        groupids_added.append(groupid[type_idx][i]) 
-                                        sum_parts += num_particles_per_group[groupid[type_idx][i]]
-                                        print("Group {0} has {1} particles.".format(groupid[type_idx][i], num_particles_per_group[groupid[type_idx][i]]))
-
-                                numpart_thisfile[type_idx] += len(ids_found)
-                                numpart_allfiles[type_idx] += len(ids_found)
+                        snapshot_partid = particles['ParticleIDs']
+                        
+                        print("Our key list (FoF Particle IDs) has length {0} and our match list (Snapshot Particle IDs) has length {1}".format(len(fof_partid[type_idx]), len(snapshot_partid)))
      
-                                print("The number of particles that were found is {0}.  The number of particles in the groups in this chunk (groups {1}) is {2}".format(len(ids_found), groupids_added, sum_parts)) 
-                                #assert(len(ids_found) == sum_parts)
-        ## At this point we have successfully linked all the particles in this Snapshot chunk to the FoF Groups (this can, and will at high z, be zero particles). ##
-        ## Now we need to construct a hdf5 file for this chunk, WRITE OUT THE HEADER, and then write out all of the particle data. ##
-        ## Note: Since an important piece of information for the header is the total number of FoF Particles within the group, we will need to write out the individual parts of the header, keep a running total of the number of particles, then loop through N_cores again to write out the cumulative information. ##
+                        ids_found = np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)) # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns only 'Trues'.  
+                                                                                                                     # Hence 'ids_found' will be the snapshot particle INDICES for those particles in the FoF group.
+                                                                                                                     # Taken from https://stackoverflow.com/questions/11483863/python-intersection-indices-numpy-array.
+                        ids_found = ids_found[0].tolist() # Need to explicitly recast as a list for work with h5py.
 
-        fname = "/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof/groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
-       
+                        ## We need to grab the correct FoF group ID so we need to know which Snapshot Particle matched with which FoF Particle.  Then we use the index of where the FoF Particle is to grab the correct groupid. ##
+                        if len(ids_found) > 0: # Checks to see if any matching IDs were found.
+                            print(ids_found)                            
+                            particle_id[type_idx].append(particles['ParticleIDs'][ids_found])                         
+                            fof_partid_idx = np.int32(np.nonzero(np.in1d(fof_partid[type_idx], snapshot_partid, assume_unique = True))[0]) 
+
+                            groupids_added = []
+                            sum_parts = 0
+                            for i in fof_partid_idx: 
+                                particle_groupid[type_idx].append(groupid[type_idx][i])
+                                if (groupid[type_idx][i] in groupids_added) == False:
+                                    groupids_added.append(groupid[type_idx][i]) 
+                                    sum_parts += num_particles_per_group[groupid[type_idx][i]]
+                                    print("Group {0} has {1} particles.".format(groupid[type_idx][i], num_particles_per_group[groupid[type_idx][i]]))
+
+                            print("The number of particles that were found is {0}.  The number of particles in the groups in this chunk (groups {1}) is {2}".format(len(ids_found), groupids_added, sum_parts)) 
+
+                   
+                    
+                    particle_fof_id = np.full((NumPart_ThisFile[type_idx]), 1<<30, dtype = np.int32) # First initialize every Snapshot Particle to be 'Not in a group' (1<<30 is HBT+'s flag for this).
+                    if len(particle_groupid[type_idx]) > 0: # Then loop through each of the matched particles,
+                        for i in range(0, len(ids_found)):
+                            particle_fof_id[ids_found[i]] = particle_groupid[i] # Update the GroupID value for the Snapshot Particles to be the correct FoF GroupID that we matched previously.
+
+                    snapshot_groupid[type_idx].append(particle_fof_id)
+                    snapshot_groupid[type_idx] = snapshot_groupid[type_idx][0] # Fix up the indexing of this array.  The result of this is 'snapshot_partid[type_idx]' returns an array (not a nested one). 
+
+        ## At this point we have matched any particles in the snapshot that are in FoF Groups. ##
+        ## We have also constructed an array (snapshot_groupid) that contains the FoF Group for each snapshot particle; using '1<<30' if the particle is not in a group. ##
+
+        fname = "/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof/groups_{0:03d}/my_fof_groupids_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx) 
+
         with h5py.File(fname, 'w') as f:
-            f.create_group("Header") 
-    
-            ## Write local header attributes. ##
-
-            f['Header'].attrs.create("NumFilePerSnapshot", num_cores, dtype = np.int32)
-            f['Header'].attrs.create("BoxSize", BoxSize, dtype = np.float32)
-            f['Header'].attrs.create("Time", Time, dtype = np.float32)
-            f['Header'].attrs.create("Omega0", Omega_m, dtype = np.float32)
-            f['Header'].attrs.create("OmegaLambda", Omega_l, dtype = np.float32)
-            f['Header'].attrs.create("MassTable", particle_mass, dtype = np.float32)
-            
-            f['Header'].attrs.create("NumPart_ThisFile", numpart_thisfile, dtype = np.int32) 
-
-            if num_groups > 0:
-                for type_idx in range(0, TypeMax):
-                    if len(particle_position[type_idx]) == 0:
-                        continue
-                    name = 'PartType{0}'.format(type_idx)
-                    f.create_group(name)
-                    
-                    name = 'PartType{0}/Coordinates'.format(type_idx)
-                    dset = f.create_dataset(name, dtype = np.float32, data = particle_position[type_idx][0]) # Position of each particle (Mpc/h).
-
-                    name = 'PartType{0}/Velocities'.format(type_idx) 
-                    dset = f.create_dataset(name, dtype = np.float32, data = particle_velocity[type_idx][0]) # Velocity of each particle (km/s).
-
-                    name = 'PartType{0}/ParticleIDs'.format(type_idx) 
-                    dset = f.create_dataset(name, dtype = np.int64, data = particle_id[type_idx][0]) # ID of each particle.
-
-                    name = 'PartType{0}/GroupNumber'.format(type_idx) 
-                    dset = f.create_dataset(name, dtype = np.int64, data = particle_groupid[type_idx]) # FoF ID of each particle.
+            for type_idx in range(0, TypeMax):
+                if NumPart_ThisFile[type_idx] == 0:
+                    continue
                 
-            print("Written Data.")
+                name = 'PartType{0}'.format(type_idx)
+                f.create_group(name)
 
-    ## Here we have looped over all the cores. ##  
-    ## Now need to open up each file one last time and write the Total Number of Particles attribute. ##
+                name = 'PartType{0}/GroupNumber'.format(type_idx) 
+                dset = f.create_dataset(name, dtype = np.int32, data = snapshot_groupid[type_idx]) # Velocity of each particle (km/s).
 
-    comm.Barrier()
-
-    if rank == 0:
-        numpart_allfiles_total = np.zeros_like(numpart_allfiles)
-    else:
-        numpart_allfiles_total = None 
+        print("Written data to {0}".format(fname))
         
-    comm.Reduce([numpart_allfiles, MPI.DOUBLE], [numpart_allfiles_total, MPI.DOUBLE], op = MPI.SUM, root = 0) # Sum all the stellar mass and pass to Rank 0.
-
-    if rank == 0:
-        for core_idx in range(0, num_cores):
-#        for core_idx in cores:
-                    
-            fname = "/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof/groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
-           
-            with h5py.File(fname, 'r+') as f:
-
-                f['Header'].attrs.create("NumPart_Total", numpart_allfiles_total, dtype = np.int32) # Least significant 32 bits of total number of particles.
-                numpart_highword = np.zeros((TypeMax), dtype = np.int32)                
-
-                for type_idx in range(0, TypeMax):
-                    if numpart_allfiles_total[type_idx] > pow(2, 32) - 1:
-                        numpart_highword[type_idx] = numpart_allfiles_total[type_idx] >> 32
-                
-                f['Header'].attrs.create("NumPart_Total_HighWord", numpart_highword, dtype = np.int32) # Most significant bits of total number of particles (if Number of particles is greater than 2^32 - 1). 
-    
 if __name__ == '__main__':
 
     for snapshot_idx in range(snaplow, snaphigh + 1):  
