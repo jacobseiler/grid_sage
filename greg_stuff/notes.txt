@@ -1,0 +1,19 @@
+make_trees requires (at least) 10 inputs.  Note that cannot just run the vertical trees by itself as the vertical trees are created from the horizontal trees. Hence need all inputs.
+
+SSimPL_dir : This is the directory that contains all the necessary subdirectories which are
+   - catalogs
+   - grids  
+   - halos  
+   - run  
+   - smooth
+   - snapshots  
+   - trees
+filename_halo_version_root : Root name for the halos
+filename_trees_name : Root name for the trees to be output.
+i_read_start : Snapshot start. (Not used for vertical)
+i_read_stop : Snapshot end. (Not used for vertical)
+i_read_step : Snapshot step. (Not used for vertical)
+n_search : Idk (Not used for vertical) (Check with Greg)
+flag_fix_bridges : Flag to fix the bridges xD (Not used for vertical) (Check with Greg)
+box_size : Size of Box [Mpc/h] (Not used in vertical)
+n_dim_files : The cube root of the number of files.  So if we're splitting the box into a 3x3x3 grid n_dim_files = 3.
