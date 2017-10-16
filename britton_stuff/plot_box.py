@@ -33,7 +33,7 @@ def plot_snapshot(filepath, snapshot_idx):
     with h5py.File(fname, 'r') as f:
 
         for i in xrange(0, 6):
-            print "plotting ParticleType %d" %(i)
+            print("plotting ParticleType {0}".format(i))
             tmp = "PartType%d" %(i)
             try:
                 part = f[tmp]['Coordinates']
@@ -46,9 +46,9 @@ def plot_snapshot(filepath, snapshot_idx):
                 else:
                     w = np.arange(0, len(part))  
                
-                print "The x coords range from [%.4f, %.4f]" %(min(part[:,0]), max(part[:,0]))
-                print "The y coords range from [%.4f, %.4f]" %(min(part[:,1]), max(part[:,1]))
-                print "The z coords range from [%.4f, %.4f]" %(min(part[:,2]), max(part[:,2]))
+                print("The x coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,0]), max(part[:,0])))
+                print("The y coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,1]), max(part[:,1])))
+                print("The z coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,2]), max(part[:,2])))
                 
                 ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[i-1])
 
@@ -61,7 +61,7 @@ def plot_snapshot(filepath, snapshot_idx):
 
     outputFile = './AllPart_%d%s' %(snapshot_idx, output_format) 
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
-    print 'Saved file to', outputFile
+    print('Saved file to {0}'.format(outputFile))
     plt.close()
 
 def plot_halos(filepath, snapshot_idx):
@@ -88,7 +88,7 @@ def plot_halos(filepath, snapshot_idx):
                 pass
             else:
                 have_fof = 1
-                print "Found %d groups for snapshot %d, Core %d" %(len(position), snapshot_idx, core_idx)
+                print("Found {0} groups for snapshot {1}, Core {2}".format(len(position), snapshot_idx, core_idx))
 
                 #ax1.scatter(position[:,0], position[:,1], marker = 'o', alpha = 0.5, color = 'r')
                 for i in xrange(0, len(position)):
@@ -114,7 +114,7 @@ def plot_halos(filepath, snapshot_idx):
     plt.tight_layout()
     outputFile = './halo_1721228/%d%s' %(snapshot_idx, output_format) 
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
-    print 'Saved file to', outputFile
+    print('Saved file to {0}'.format(outputFile))
     plt.close()
 
 def check_bounds(filepath, snapshot_idx):
@@ -132,7 +132,7 @@ def check_bounds(filepath, snapshot_idx):
 
         tmp = "snapdir_%03d/snapshot_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
         fname = filepath + tmp
-        print fname
+        print(fname)
         with h5py.File(fname, 'r') as f:
 
             for part_idx in xrange(1, 5):
@@ -147,12 +147,15 @@ def check_bounds(filepath, snapshot_idx):
                     local_x_max = max(part[:,0])
                     if(local_x_min < min_x[part_idx - 1]):
                         min_x[part_idx - 1] = local_x_min
-                        print "New x min", local_x_min
+                        print("New x min = {0}".format(local_x_min))
                     if(local_x_max > max_x[part_idx -1]):
                         max_x[part_idx - 1] = local_x_max
-                        print "New x max", local_x_max
+                        print("New x max = {1}".format(local_x_max))
 
-    print "For snapshot ", snapshot_idx, "the smallest x coorindate is ", min_x, "and maximum is ", max_x, "(for each particle type)" 
+    print("For snapshot {0} the smallest x coorindate is {1} [Mpc/h] and maximum is {2} [Mpc/h] (for each particle type)".format(snapshot_idx, min_x, max_x)) 
+
+def plot_hmf(filepath, snapshot_idx):
+    print("Hello")
 
 if __name__ == '__main__':
 
@@ -162,4 +165,5 @@ if __name__ == '__main__':
     for snapshot_idx in xrange(0, 131):
         plot_snapshot(filepath, snapshot_idx)
         #plot_halos(filepath, snapshot_idx)
-        #check_bounds(filepath, snapshot_idx) 
+        #check_bounds(filepath, snapshot_idx)
+        plot_hmf(filepath, snapshot_idx) 
