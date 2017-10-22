@@ -1,0 +1,22 @@
+===============
+gbpGADGET Notes
+===============
+
+These are some notes for running Greg's version of GADGET that he sent to me. Since we have Britton's snapshots already run, we simply need to run SUBFIND on these output snaps.
+
+Syntax for running gbpGadget is:
+``./gbpGadget <ParameterFile> [<RestartFlag>] [<RestartSnapNum>]``
+
+Since we are running only SUBFIND we set 'RestartFlag' to 3 (I believe).  Then the syntax for naming the snapshot file is,
+``sprintf(fname, "%s/snapshots/snapshot_%03d/%s_%03d", All.OutputDir, RestartSnapNum, All.SnapshotFileBase,RestartSnapNum);``
+
+For Britton's directory structure I have changed this line to,
+``sprintf(fname, "%s/data/snapdir_%03d/%s_%03d", All.OutputDir, RestartSnapNum, All.SnapshotFileBase, RestartSnapNum);``
+
+Setting ICFormat to 3 will cause Gadget to read the files as HDF5 format.  Even though the input ICs were probably not in HDF5 format, since we are using the snapshots as 'ICs' this is the correct move. 
+Gadget will read the number of files using the names,
+``sprintf(buf, "%s.%d.hdf5", fname, 0);
+sprintf(buf1, "%s.hdf5", fname);``
+
+
+
