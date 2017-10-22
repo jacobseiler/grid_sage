@@ -17,3 +17,79 @@ n_search : Idk (Not used for vertical) (Check with Greg)
 flag_fix_bridges : Flag to fix the bridges xD (Not used for vertical) (Check with Greg)
 box_size : Size of Box [Mpc/h] (Not used in vertical)
 n_dim_files : The cube root of the number of files.  So if we're splitting the box into a 3x3x3 grid n_dim_files = 3.
+
+
+
+=================================================================================================================
+                                                Building Trees
+=================================================================================================================
+
+=================
+Constructing PHKs
+=================
+
+First need to construct the PH keys for the halo catalogues.  This is done by running './make_group_PHKs'.  The arguments for this executable are:
+
+filename_halos_root : Root name for the input halo information.  These files contain information regarding things such as the number of particles per FoF halo + the particle IDs in each FoF group etc. Ex.: '/home/jseiler/SAGE-stuff/greg_stuff/halos/subfind'
+filename_catalog_root : Root name for the input halo catalogs. These files contain the actual properties of the halo FoF groups (Mvir, position etc). Ex.: '/home/jseiler/SAGE-stuff/greg_stuff/catalogs/subfind'
+filename_PHKs_root : Root name for the output PHKs. Ex.: '/home/jseiler/SAGE-stuff/greg_stuff/halos/subfind'
+box_size : Size of the box [Mpc/h]. Ex.: 125.0
+dx : The maximum separation [Mpc/h] for two groups to be matched.  Suggested to be ~3 as this more than covers the virial radius of a halo. Ex.: 3.0
+i_file_lo_in : Lower snapshot bound we are generating the keys for. Ex.: 0
+i_file_hi_in : Upper snapshot bound we are generating the keys for (inclusive). Ex.: 250
+i_file_skip : Snapshot step size. Ex.:1
+
+Example Execution: ./make_group_PHKs /home/jseiler/SAGE-stuff/greg_stuff/halos/subfind /home/jseiler/SAGE-stuff/greg_stuff/catalogs/subfind /home/jseiler/SAGE-stuff/greg_stuff/halos/subfind 125.0 3.0 0 250 1
+
+This takes a surprisingly short amount of time to do (~5 seconds).
+
+===================
+Making Tree Matches
+===================
+
+This is the process by which a halo in one snapshot is matched to the halo in a subsequent snapshot.  This is done by running './make_trees_matches'.  The arguments for this executable are:
+
+filename_halo_root_in : Root name for the input halo information.  These files contain information regarding things such as the number of particles per FoF halo + the particle IDs in each FoF group etc. Ex.: '/home/jseiler/SAGE-stuff/greg_stuff/halos/subfind'
+filename_root_matches : Root name for the output matches. Note: The 'trees' directory must have been made here. Ex.: '/home/jseiler/SAGE-stuff/greg_stuff/trees/matches/'
+i_read_start : Start snapshot. Ex.: 0
+i_read_stop : End snapshot (inclusive). Ex.: 250
+n_search : Over how many snapshots should we search for the halo.  Beyond this number we assume the halo has fallen under the resolution limit/was never a halo in the first place.  Suggested to be ~16. Ex.: 16
+flag_write_headers : Flag or whether we want to write headers for the matches. Ex.: 1
+
+Example Execution: ./make_trees_matches /home/jseiler/SAGE-stuff/greg_stuff/halos/subfind /home/jseiler/SAGE-stuff/greg_stuff/trees/matches/ 0 250 16 1 
+
+Run time was fairly medium (~45 mins for all 250 Tiamat snapshots with n_search = 16)
+
+=============
+Tree Building
+=============
+
+We can now build the full trees.  However here we note that the horizontal trees are CONVERTED into the vertical ones; we cannot just build the vertical ones.
+    ==========
+    Horizontal 
+    ==========
+
+Built by running './make_trees_horizontal'.  The arguments for this executable are:
+
+filename_SSimPL_dir : This is the global directory that the 'halos', 'catalogs', 'run' etc directory are stored in.
+filename_halo_version_root : Root name for the halos (note this is just the prefix for the halo names, not the path).
+filename_trees_name : Root name for the output trees (note this is just the prefix for the tree names, not the path).
+i_read_start : Start snapshot.
+i_read_stop : End snapshot (inclusive).
+i_read_step : Snapshot step size.
+n_search : Over how many snapshots should we search for the halo.  Beyond this number we assume the halo has fallen under the resolution limit/was never a halo in the first place.  Suggested to be ~16.
+flag_fix_bridges : Flag if we want to fix bridges (get clarification).
+
+Took about 24 minutes for run for snapshots 0 to 100 for Tiamat.
+
+    ========
+    Vertical 
+    ========
+
+Built by running './make_trees_vertical'.  The arguments for this executable are:
+
+filename_SSimPL_dir : This is the global directory that the 'halos', 'catalogs', 'run' etc directory are stored in.
+filename_halo_version_root : Root name for the halos (note this is just the prefix for the halo names, not the path).
+filename_trees_name : Root name for the output trees (note this is just the prefix for the tree names, not the path). NOTE: This MUST be the same path as that given for the horizontal trees building.
+n_dim_files : Number of 'sub-volumes' to split the trees up into.  If we want the box to be divided into 3x3x3 cubes then this variable will be '3'. 
+
