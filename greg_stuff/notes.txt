@@ -1,3 +1,7 @@
+=======================
+      Old Notes
+=======================
+
 make_trees requires (at least) 10 inputs.  Note that cannot just run the vertical trees by itself as the vertical trees are created from the horizontal trees. Hence need all inputs.
 
 SSimPL_dir : This is the directory that contains all the necessary subdirectories which are
@@ -19,6 +23,10 @@ box_size : Size of Box [Mpc/h] (Not used in vertical)
 n_dim_files : The cube root of the number of files.  So if we're splitting the box into a 3x3x3 grid n_dim_files = 3.
 
 
+
+=======================
+      New Notes
+=======================
 
 =================================================================================================================
                                                 Building Trees
@@ -82,6 +90,8 @@ flag_fix_bridges : Flag if we want to fix bridges (get clarification).
 
 Took about 24 minutes for run for snapshots 0 to 100 for Tiamat.
 
+Example Execution: ./make_trees_horizontal /home/jseiler/SAGE-stuff/greg_stuff/ subfind  test_tiamat_horizontal 0 100 1 16 1
+
     ========
     Vertical 
     ========
@@ -92,4 +102,8 @@ filename_SSimPL_dir : This is the global directory that the 'halos', 'catalogs',
 filename_halo_version_root : Root name for the halos (note this is just the prefix for the halo names, not the path).
 filename_trees_name : Root name for the output trees (note this is just the prefix for the tree names, not the path). NOTE: This MUST be the same path as that given for the horizontal trees building.
 n_dim_files : Number of 'sub-volumes' to split the trees up into.  If we want the box to be divided into 3x3x3 cubes then this variable will be '3'. 
+
+Took about 2 minutes for snapshots 0 to 100 for Tiamat.
+
+Example Execution:  ./make_trees_vertical /home/jseiler/SAGE-stuff/greg_stuff/ subfind test_tiamat_horizontal 3
 
