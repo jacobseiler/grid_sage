@@ -21,54 +21,164 @@ import PlotScripts
 import ReadScripts
 
 output_format = ".png"
-dilute = 10000
+dilute = 50000
 bin_width = 0.1
 
-num_cores = 256
+num_cores = 11
 TypeMax = 6
 snaplow = 20
-snaphigh = 100
+snaphigh = 20
+
+groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
+snapdir = '/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/means/halo_1721673/dm_gadget/data/'
+linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_full/'
+
 
 def plot_snapshot(filepath, snapshot_idx):
 
-    ax1 = plt.subplot(111)
+    fig = plt.figure()
 
-    tmp = "snapdir_%03d/snapshot_%03d.129.hdf5" %(snapshot_idx, snapshot_idx)
-    fname = filepath + tmp
+    ax1 = fig.add_subplot(121) 
+    #ax2 = plt.axes([0.58, 0.58, 0.29, 0.29])
+    ax2 = fig.add_subplot(122) 
 
-    with h5py.File(fname, 'r') as f:
-
-        for i in range(TypeMax):
-            print("plotting ParticleType {0}".format(i))
-            tmp = "PartType%d" %(i)
-            try:
-                part = f[tmp]['Coordinates']
-            except KeyError:
-                pass
-            else:
-                if(len(part) > dilute): 
-                    w = sample(np.arange(0, len(part)), dilute) 
-                    w = np.sort(w)
+    for core_idx in range(10, num_cores):
+        print("Plotting chunk {0}".format(core_idx))
+        if snapshot_idx < 66:
+            fname = "{2}snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
+        else:
+            fname = "{2}snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
+    
+        with h5py.File(fname, 'r') as f:
+            for type_idx in range(TypeMax): 
+                print("plotting ParticleType {0}".format(type_idx))
+                tmp = "PartType{0}".format(type_idx)
+                try:
+                    part = f[tmp]['Coordinates'][:]
+                except KeyError:
+                    pass
                 else:
-                    w = np.arange(0, len(part))  
-               
-                print("The x coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,0]), max(part[:,0])))
-                print("The y coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,1]), max(part[:,1])))
-                print("The z coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,2]), max(part[:,2])))
-                
-                ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[i-1])
+
+#                    w = np.where((part[:,2] > 800.0) & (part[:,2] < 804.0))[0]
 
 
-    ax1.set_xlim([760, 830])
-    ax1.set_ylim([760, 830])
+                    if(len(part) > dilute):
+ 
+                        w = sample(list(np.arange(0, len(part))), dilute) 
+#                        w = np.sort(w)
+                    else:
+                        w = np.arange(0, len(part))  
 
-    ax1.set_xlabel("x [mpc]")
-    ax1.set_ylabel("y [mpc]")
+#                    print("The x coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,0]), max(part[:,0])))
+#                    print("The y coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,1]), max(part[:,1])))
+#                    print("The z coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,2]), max(part[:,2])))
+   
+                    ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)
+                    ax2.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
 
-    outputFile = './AllPart_%d%s' %(snapshot_idx, output_format) 
+    for type_idx in range(1, TypeMax): # PartType0 has no particles ever.
+        label = 'PartType{0}'.format(type_idx)
+        ax1.scatter(np.nan, np.nan, color = PlotScripts.colors[type_idx-1], label = label)
+
+    ax1.set_xlim([0, 1600])
+    ax1.set_ylim([0, 1600])
+
+    ax2.set_xlim([774, 827])
+    ax2.set_ylim([774, 827])
+
+    ax1.set_xlabel("")
+    ax1.set_ylabel("y [Mpc/h]")
+
+    ax2.set_xlabel("x [Mpc/h]")    
+    ax2.set_ylabel("y [Mpc/h]")
+    
+    leg = ax1.legend(loc='upper left', numpoints=1,labelspacing=0.1)
+    leg.draw_frame(False)  # Don't want a box frame
+    for t in leg.get_texts():  # Reduce the size of the text
+        t.set_fontsize(PlotScripts.global_legendsize)
+        t.set_alpha(1)
+
+    plt.tight_layout()
+
+    outputFile = './AllPart_Core{2}_{0}{1}'.format(snapshot_idx, output_format, core_idx) 
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
     print('Saved file to {0}'.format(outputFile))
     plt.close()
+
+def plot_density_grid(filepath, snapshot_idx, GridSize):
+
+    fig = plt.figure()
+
+    ax1 = fig.add_subplot(111) 
+
+    density_grid = np.zeros((GridSize, GridSize, GridSize), np.float64)
+
+    bound_low = 775.0
+    bound_high = 825.0
+    print("Creating a density grid.")
+    for core_idx in range(10, num_cores):
+        print("Summing chunk {0}".format(core_idx))
+        if snapshot_idx < 66:
+            fname = "{2}snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
+        else:
+            fname = "{2}snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
+    
+        with h5py.File(fname, 'r') as f:
+            for type_idx in range(TypeMax): 
+                print("plotting ParticleType {0}".format(type_idx))
+                tmp = "PartType{0}".format(type_idx)
+                try:
+                    part = f[tmp]['Coordinates'][:]
+                except KeyError:
+                    pass
+                else:
+                    for part_idx in range(len(part)):
+                        if(part_idx % 1e5 == 0):
+                            print("Particle {0}".format(part_idx))
+                        x_pos = part[part_idx,0]
+                        y_pos = part[part_idx,1]
+                        z_pos = part[part_idx,2]
+
+                        if (x_pos < bound_low or x_pos > bound_high or y_pos < bound_low or y_pos > bound_high or z_pos < bound_low or z_pos > bound_high):
+                            continue
+
+                        x_grid = int((x_pos - bound_low) * GridSize/ AllVars.BoxSize) 
+                        y_grid = int((y_pos - bound_low) * GridSize/ AllVars.BoxSize) 
+                        z_grid = int((z_pos - bound_low) * GridSize/ AllVars.BoxSize) 
+
+                        if(type_idx != 5):  
+                            mass = f['Header'].attrs['MassTable'][type_idx]
+                        else:
+                            mass = 0.471431761 # For some reason Britton's Sim doesn't have a proper mass for PartType5 in the MassTable.
+
+                        density_grid[x_grid, y_grid, z_grid] += mass
+ 
+    total_mass = np.sum(density_grid)
+    norm_density = total_mass / pow(GridSize, 3)
+    print("The total mass is {0} and the norm_density is {1}".format(total_mass, norm_density))
+    
+    density_grid /= norm_density
+
+    cut_slice = 0
+    im = ax.imshow(density_grid[:,:,cut_slice:cut_slice+127].mean(axis = -1), interpolation='bilinear', origin='low', extent =[0,AllVars.BoxSize,0,AllVars.BoxSize], cmap = 'Purples', vmin = 0.12, vmax = 25.0)
+
+    cbar = plt.colorbar(im, ax = ax)
+    cbar.set_label(r'$\rho/\langle \rho \rangle$')
+
+    ax.set_xlabel(r'$\mathrm{x}  (h^{-1}Mpc)$')
+    ax.set_ylabel(r'$\mathrm{y}  (h^{-1}Mpc)$')
+
+    ax.set_xlim([0.0, AllVars.BoxSize])
+    ax.set_ylim([0.0, AllVars.BoxSize])
+    
+    outputFile = './density_grid_snapshot{0}_core{1}'.format(snapshot_idx, num_cores - 1) 
+    plt.savefig(outputFile)  # Save the figure
+    print('Saved file to {0}'.format(outputFile))
+
+    plt.close()
+
+
+
 
 def plot_halos(filepath, snapshot_idx):
 
@@ -126,17 +236,17 @@ def check_bounds(filepath, snapshot_idx):
     min_x = np.full(TypeMax, 1e10)
     max_x = np.full(TypeMax, -1e10)
 
-    min_y = [1e10, 1e10, 1e10, 1e10]
-    max_y = [-1e10, -1e10, -1e10, -1e10]
+    min_y = np.full(TypeMax, 1e10)
+    max_y = np.full(TypeMax, -1e10)
 
-    min_z = [1e10, 1e10, 1e10, 1e10]
-    max_z = [-1e10, -1e10, -1e10, -1e10] 
+    min_z = np.full(TypeMax, 1e10)
+    max_z = np.full(TypeMax, -1e10)
 
-    for core_idx in range(100):
+    for core_idx in range(num_cores):
 
         tmp = "snapdir_%03d/snapshot_%03d.%d.hdf5" %(snapshot_idx, snapshot_idx, core_idx)
         fname = filepath + tmp
-        print(fname)
+        print("Chunk {0}".format(core_idx))
         with h5py.File(fname, 'r') as f:
 
             for part_idx in range(TypeMax):
@@ -147,14 +257,34 @@ def check_bounds(filepath, snapshot_idx):
                 except KeyError:
                     pass
                 else:
+
                     local_x_min = min(part[:,0])
                     local_x_max = max(part[:,0])
-                    if(local_x_min < min_x[part_idx - 1]):
-                        min_x[part_idx - 1] = local_x_min
+                    if(local_x_min < min_x[part_idx]):
+                        min_x[part_idx ] = local_x_min
                         print("New x min = {0} for PartType {1}".format(local_x_min, part_idx))
-                    if(local_x_max > max_x[part_idx -1]):
-                        max_x[part_idx - 1] = local_x_max
+                    if(local_x_max > max_x[part_idx]):
+                        max_x[part_idx] = local_x_max
                         print("New x max = {0} for PartType {1}".format(local_x_max, part_idx))
+
+                    local_y_min = min(part[:,1])
+                    local_y_max = max(part[:,1])
+                    if(local_y_min < min_y[part_idx]):
+                        min_y[part_idx] = local_y_min
+                        print("New y min = {0} for PartType {1}".format(local_y_min, part_idx))
+                    if(local_y_max > max_y[part_idx]):
+                        max_y[part_idx] = local_y_max
+                        print("New y max = {0} for PartType {1}".format(local_y_max, part_idx))
+
+                    local_z_min = min(part[:,2])
+                    local_z_max = max(part[:,2])
+                    if(local_z_min < min_z[part_idx]):
+                        min_z[part_idx] = local_z_min
+                        print("New z min = {0} for PartTzpe {1}".format(local_z_min, part_idx))
+                    if(local_z_max > max_z[part_idx]):
+                        max_z[part_idx] = local_z_max
+                        print("New z max = {0} for PartTzpe {1}".format(local_z_max, part_idx))
+
 
     print("For snapshot {0} the smallest x coorindate is {1} [Mpc/h] and maximum is {2} [Mpc/h] (for each particle type)".format(snapshot_idx, min_x, max_x)) 
 
@@ -244,6 +374,7 @@ if __name__ == '__main__':
  
     for snapshot_idx in range(snaplow, snaphigh + 1):
         #plot_snapshot(filepath, snapshot_idx)
+        plot_density_grid(filepath, snapshot_idx, 128)
         #plot_halos(filepath, snapshot_idx)
         #check_bounds(filepath, snapshot_idx)
-        plot_hmf(filepath, snapshot_idx, hmf) 
+        #plot_hmf(filepath, snapshot_idx, hmf) 
