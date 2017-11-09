@@ -12,6 +12,7 @@ import numpy as np
 import pylab as plt
 from random import sample
 
+from matplotlib.patches import Circle
 import yt
 
 sys.path.append('/home/jseiler/SAGE-stuff/output/')
@@ -27,7 +28,7 @@ comm= MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-snaplow = 20
+snaplow = 20 
 snaphigh = 20
 num_cores = 256 
 groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
@@ -36,6 +37,8 @@ linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_
 TypeMax = 6
 
 subfind_dir = '/lustre/projects/p134_swin/jseiler/subfind_britton/' 
+
+bin_width = 0.1
  
 def write_fof_header(snapshot_idx):
 
@@ -309,7 +312,7 @@ def link_fof_snapshot_ids(snapshot_idx):
 
         print("Written data to {0}".format(fname))
 
-def link_fof_snapshot_full(snapshot_idx):
+def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     '''
     This function goes through each snapshot within the simulation and matches the FoF particles with those in the original snapshot list.  It then saves the FoF particles with the relevant properties to a separate file. 
     Note: This function is different to link_fof_snapshots_ids() in that it saves a file containing the full information regarding the FoF particle, not merely its ID/GroupID. 
@@ -318,6 +321,8 @@ def link_fof_snapshot_full(snapshot_idx):
     ----------
     snapshot_idx : int
         Snapshot number that we are doing the linking for.
+    add_unbound_particles : int
+        If we wish to add a random 1000 unbound particles this flag should be set to '1'.  Otherwise we only include particles bound in FoFs.
 
     Returns
     -------
@@ -407,10 +412,21 @@ def link_fof_snapshot_full(snapshot_idx):
                             
 #                            print("Our key list (FoF Particle IDs) has length {0} and our match list (Snapshot Particle IDs) has length {1}".format(len(fof_partid[type_idx]), len(snapshot_partid)))
          
-                            ids_found = np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)) # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns the indices of those values that have a 'True'.  
+                            ids_found = (np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)))[0] # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns the indices of those values that have a 'True'.  
                                                                                                                          # Hence 'ids_found' will be the snapshot particle INDICES for those particles in the FoF group.
                                                                                                                          # Taken from https://stackoverflow.com/questions/11483863/python-intersection-indices-numpy-array.
-                            ids_found = ids_found[0].tolist() # Need to explicitly recast as a list for work with h5py.
+                          
+                            if(add_unbound_particles == 1 and len(ids_found) > 0):
+                                ids_before = len(ids_found)  
+                                random_snap_parts = sample(range(len(snapshot_partid)), 1000)
+                                ids_found = np.append(ids_found, random_snap_parts)
+
+                                print("We have added 1000 extra particles.")
+                                ids_found = np.unique(ids_found) 
+                                print("Ensuring that we have only unique particles we therefore have added {0} unbound particles.".format(len(ids_found) - ids_before))
+                    
+
+                            ids_found = ids_found.tolist() # Need to explicitly recast as a list for work with h5py.                                                                                             
                             ## Now we've found any matching IDs we need to grab the particles position/velocity. ##
                             if len(ids_found) > 0: # Checks to see if any matching IDs were found.
 
@@ -458,6 +474,7 @@ def link_fof_snapshot_full(snapshot_idx):
 
             if num_groups > 0:
                 for type_idx in range(0, TypeMax):
+               
                     if len(particle_position[type_idx]) == 0:
                         continue
                     name = 'PartType{0}'.format(type_idx)
@@ -481,8 +498,10 @@ def link_fof_snapshot_full(snapshot_idx):
  
     ## Now need to open up each file one last time and write the Total Number of Particles attribute. ##
 
+    print("I am Task {0} and I have finished my writing.  Now waiting on other tasks to finish.".format(rank))
     comm.Barrier()
 
+    print("Now going through all the chunks and summing up the number of particles.")
     if rank == 0:
         numpart_allfiles_total = np.zeros_like(numpart_allfiles)
     else:
@@ -724,6 +743,7 @@ def check_subfind_results(snapshot_idx):
 
     ## First let's load in all the FoF tab properties. ##
 
+    '''
     fname_fof_tab_ids = "{1}groups_{0:03d}/fof_tab_{0:03d}.0.hdf5".format(snapshot_idx, groupdir)
     
     ds = yt.load(fname_fof_tab_ids) # Loads in the entire FoF catalogue for this snapshot.
@@ -757,11 +777,186 @@ def check_subfind_results(snapshot_idx):
         N_groups = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1) 
 
     print("Number of groups in the FoF Tab is {0}.  Number of groups from SUBFIND is {1}".format(num_groups, N_groups))
-    assert(N_groups == num_groups)
+#    assert(N_groups == num_groups)
+    '''
+
+    ## Do (Sub)Halo Mass Function ## 
+    Halo_Desc_full = [
+    ('id_MBP',              np.int64),
+    ('M_vir',               np.float64),
+    ('n_particles',         np.int16),
+    ('position_COM',        (np.float32, 3)),
+    ('position_MBP',        (np.float32, 3)),
+    ('velocity_COM',        (np.float32, 3)),
+    ('velocity_MBP',        (np.float32, 3)),
+    ('R_vir',               np.float32),
+    ('R_halo',              np.float32),
+    ('R_max',               np.float32),
+    ('V_max',               np.float32),
+    ('sigma_v',             np.float32),
+    ('spin',                (np.float32, 3)),
+    ('q_triaxial',          np.float32),
+    ('s_triaxial',          np.float32),
+    ('shape_eigen_vectors', (np.float32, (3,3))),
+    ('padding',             (np.int16, 2))
+                     ] # Note that there are also a padding of 8 bytes following this array. 
+
+    names = [Halo_Desc_full[i][0] for i in range(len(Halo_Desc_full))]
+    formats = [Halo_Desc_full[i][1] for i in range(len(Halo_Desc_full))]
+    Halo_Desc = np.dtype({'names':names, 'formats':formats}, align=True)
+
+    # Reading SUBFIND Output #
+    # Halos #
+    fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_groups_properties/subfind_{1:03d}.catalog_groups_properties.0".format(subfind_dir, snapshot_idx)
+
+    print("Reading from file {0}".format(fname_subfind_groups)) 
+    with open(fname_subfind_groups, 'rb') as file_subfind_groups:
+        file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+        n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+        N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
+        N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)       
+        
+        Halos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
+        
+    halo_mass_subfind = np.log10(Halos['M_vir'])
+    npart_subfind = Halos['n_particles']
+    (halo_counts_subfind, bin_edges, bin_middle) = AllVars.Calculate_Histogram(halo_mass_subfind, bin_width, 0, 6, 11)
+    (npart_binned_subfind_mean, npart_binned_subfind_std, npart_binned_subfind_N, bin_middle) = AllVars.Calculate_2D_Mean(halo_mass_subfind, npart_subfind, bin_width, 6, 11) 
+
+    # Subhalos #
+    fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_subgroups_properties/subfind_{1:03d}.catalog_subgroups_properties.0".format(subfind_dir, snapshot_idx)
+
+    print("Reading from file {0}".format(fname_subfind_groups)) 
+    with open(fname_subfind_groups, 'rb') as file_subfind_groups:
+        file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+        n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+        N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
+        N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+       
+        Subhalos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
+        
+    subhalo_mass_subfind = np.log10(Subhalos['M_vir'])
+    (subhalo_counts_subfind, bin_edges, bin_middle) = AllVars.Calculate_Histogram(subhalo_mass_subfind, bin_width, 0, 6, 11)
+
+    # Reading the FoF Tab #
+
+    mass_fof_tab = []
+    npart_fof_tab = []
+    for core_idx in range(num_cores):
+        fname_fof_tab_ids = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
+
+        with h5py.File(fname_fof_tab_ids, "r") as file_fof_tab:
+            for group_idx in range(file_fof_tab['Group']['GroupMass'].shape[0]):
+                mass_fof_tab.append(np.log10(file_fof_tab['Group']['GroupMass'][group_idx] * 1.0e10))
+                npart_fof_tab.append(file_fof_tab['Group']['GroupLen'][group_idx])
+
+    print("The FoF Tab had {0} groups whereas SUBFIND has {1} groups.".format(len(mass_fof_tab), len(halo_mass_subfind))) 
+    (counts_fof_tab, bin_edges, bin_middle) = AllVars.Calculate_Histogram(mass_fof_tab, bin_width, 0, 6, 11) 
+    (npart_binned_fof_tab_mean, npart_binned_fof_tab_std, npart_binned_fof_tab_N, bin_middle) = AllVars.Calculate_2D_Mean(mass_fof_tab, npart_fof_tab, bin_width, 6, 11) 
+
+    ## Plotting ## 
+    # Halo Mass Function #       
+    ax1 = plt.subplot(211)
+
+    label = "Subfind" 
+    ax1.plot(bin_middle, halo_counts_subfind, label = label) 
+
+    label = "FoF Tab"
+    ax1.plot(bin_middle, counts_fof_tab, label = label)
+
+    ax1.set_ylabel(r'Count', fontsize = PlotScripts.global_fontsize) 
+
+    ax1.set_yscale('log', nonposy='clip')
+    ax1.set_xlim([7, 11])
+    ax1.set_ylim([0, max(counts_fof_tab) + 1000]) 
+
+    leg = ax1.legend(loc='upper right', numpoints=1, labelspacing=0.1)
+    leg.draw_frame(False)  # Don't want a box frame
+    for t in leg.get_texts():  # Reduce the size of the text
+        t.set_fontsize(PlotScripts.global_legendsize)
+
+    # Subhalo Mass Function #
+
+    ax2 = plt.subplot(212)
+
+    ax2.plot(bin_middle, np.divide(npart_binned_subfind_mean, npart_binned_fof_tab_mean), 'r')
+
+    ax2.set_xlim([7, 11])
 
 
+    ax2.set_xlabel(r'$\log_{10}\ M_{H} \:[M_{\odot}]$', fontsize = PlotScripts.global_fontsize)
+    ax2.set_ylabel(r'$N_\mathrm{Subfind} / N_\mathrm{FoF Tab}$', fontsize = PlotScripts.global_fontsize) 
+
+    plt.tight_layout()
+
+    outputFile = "./HaloCounts_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
+    plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
+    print('Saved file to {0}'.format(outputFile))
+    plt.close()
+
+
+    # Halos and Subhalos Spatial Plot #
+    ax1 = plt.subplot(111)
+
+    w_halos = np.where((Halos['position_COM'][:,2] > 775.0) & (Halos['position_COM'][:,2] < 776.0))[0]
+    w_subhalos = np.where((Subhalos['position_COM'][:,2] > 775.0) & (Subhalos['position_COM'][:,2] < 776.0))[0]
+
+    for halo_idx in w_halos:
+        log_mass = np.log10(Halos[halo_idx]['M_vir'])
+        print("Halo {0}: x = {1:.4f} y = {2:.4f} z = {3:.4f} M_vir = {4:.4e}".format(halo_idx, Halos[halo_idx]['position_COM'][0], Halos[halo_idx]['position_COM'][1], Halos[halo_idx]['position_COM'][2], Halos[halo_idx]['M_vir']))      
+        circ = Circle((Halos[halo_idx]['position_COM'][0], Halos[halo_idx]['position_COM'][1]), pow(1.2, log_mass), fill = False)
+        ax1.add_patch(circ)
+
+    for halo_idx in w_subhalos:
+        log_mass = np.log10(Subhalos[halo_idx]['M_vir'])
+        print("Halo {0}: x = {1:.4f} y = {2:.4f} z = {3:.4f} M_vir = {4:.4e}".format(halo_idx, Subhalos[halo_idx]['position_COM'][0], Subhalos[halo_idx]['position_COM'][1], Subhalos[halo_idx]['position_COM'][2], Subhalos[halo_idx]['M_vir']))      
+        circ = Circle((Subhalos[halo_idx]['position_COM'][0], Subhalos[halo_idx]['position_COM'][1]), pow(1.1, log_mass), fill = False, color = 'b')
+        ax1.add_patch(circ)
+
+
+
+    ax1.set_xlim([770, 830])
+    ax1.set_ylim([770, 830])
+
+    outputFile = "./Halos_Subhalos_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
+    plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
+    print('Saved file to {0}'.format(outputFile))
+    plt.close()
+
+def find_mass():
+
+    fname = "{0}/snapdir_000/snapdir_000/snapshot_000.0.hdf5".format(snapdir)
+    mass_table = [ 0.0, 0.0001150956450801459112886354629878837841, 0.0009207651606411672903090837039030702726, 0.0073661212851293383224726696312245621812, 0.0589289702810347065797813570497964974493, 0.4714317619800567626953125000000000000000] # For some reason the Mass Table in the header does not contain the mass for PartType5.
+    mass_table = [ 0.0, 0.0001150956450801459112886354629878837841, 0.0009207651606411672903090837039030702726, 0.0073661212851293383224726696312245621812, 0.0589289702810347065797813570497964974493, 0.0] # For some reason the Mass Table in the header does not contain the mass for PartType5.
+
+    mass_tot = 0
+    numpart_tot = 0
+    with h5py.File(fname, "r") as f:
+        for type_idx in range(TypeMax):
+            numpart_thistype = f['Header'].attrs['NumPart_Total'][type_idx]
+            numpart_thistype += f['Header'].attrs['NumPart_Total_HighWord'][type_idx] << 32 
+            
+
+            numpart_tot += numpart_thistype
+            mass_tot += mass_table[type_idx]*numpart_thistype 
+
+            print("For PartType {0} there is {1} particles.".format(type_idx, numpart_thistype))
+
+    print("The total number of particles within the simulation is {0}".format(numpart_tot))
+    print("The total mass within the simulation is {0}".format(mass_tot))
 if __name__ == '__main__':
 
+    AllVars.Set_Params_Britton()
+    PlotScripts.Set_Params_Plot()
+    ds = None
+    ad = None
+    #find_mass()
+   
+    snaplow = int(sys.argv[1])
+    snaphigh = int(sys.argv[2])
+
+    print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
+ 
     for snapshot_idx in range(snaplow, snaphigh + 1):  
         
         #write_fof_header(snapshot_idx) 
@@ -771,7 +966,7 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        ds, ad = link_fof_snapshot_full(snapshot_idx)
+        #ds, ad = link_fof_snapshot_full(snapshot_idx, 1)
         check_linking_full(snapshot_idx, 0, ds, ad)   
         
-        #check_subfind_results(snapshot_idx)
+        #check_subfind_results(snapshot_idx) 
