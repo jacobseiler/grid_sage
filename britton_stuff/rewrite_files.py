@@ -333,14 +333,42 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     All units are kept in internal units for the simulation.
     ''' 
 
+    numpart_allfiles = np.zeros((TypeMax), dtype = np.int64)    
 
-    tmp = "groups_{0:03d}/fof_tab_{0:03d}.0.hdf5".format(snapshot_idx)
-    fname = groupdir + tmp 
+    if rank == 0:
+        fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
 
+        for core_idx in trange(num_cores):
+            fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
+
+            with h5py.File(fname, "r") as file_fof_tab:
+                Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total']
+                if(Ngroups_Total == 0):
+                    break
+               
+                Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile']
+                if(Ngroups_ThisFile == 0):
+                    continue
+                part_ids = file_fof_tab['IDs']['ID'][:]
+                part_types = file_fof_tab['IDs']['MemberType'][:]
+
+                for part_idx in range(len(part_ids)):
+                    parttype = part_types[part_idx]
+                    fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
+
+
+        print("For snapshot {0} there are {1} groups.".format(snapshot_idx, Ngroups_Total))
+    else:
+        fof_partid = None   
+        Ngroups_Total = None
+
+    print("I am about to broadcast everything.") 
+    fof_partid = comm.bcast(fof_partid, root = 0)
+    Ngroups_Total = comm.bcast(Ngroups_Total, root = 0)    
+        
+    '''
     ds = yt.load(fname) # Loads in the entire FoF catalogue for this snapshot.
     ad = ds.all_data() # Container for all the data that we can work with.
-
-    numpart_allfiles = np.zeros((TypeMax), dtype = np.int64) 
 
     if len(ds.field_list) == 0: # If there aren't any groups in this file, then we skip all the linking.  Note we still need to create files to say there aren't any groups.
         num_groups = 0 
@@ -355,7 +383,6 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
         ## So we need to store information about the particles in length 'TypeMax' lists. ##
 
         groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for each group.
-        fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
         
         for group_idx in trange(num_groups): # Loop over each group.
             halo = ds.halo('Group', group_idx) # Loads all the information for the specified group.
@@ -366,7 +393,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                 groupid[parttype].append(group_idx)
                 fof_partid[parttype].append(np.int64(halo['member_ids'][particle_idx]))
         
-
+    '''
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
     ## Now need to load in the snapshot chunk by chunk and search for the particle IDs. ##
     ## Note: Since we want to do the snapshot loading piecewise (so we don't need ~250Gb ram) we won't use yt. ##
@@ -378,7 +405,6 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
         particle_position = [[] for x in range(TypeMax)]
         particle_velocity = [[] for x in range(TypeMax)]
         particle_id = [[] for x in range(TypeMax)]
-        particle_groupid = [[] for x in range(TypeMax)]
         numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
 
         if snapshot_idx < 66: 
@@ -398,7 +424,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
             Omega_l = f['Header'].attrs['OmegaLambda'] # Dark energy density.
             particle_mass = f['Header'].attrs['MassTable'] # Table of particle masses (length equal to TypeMax)
 
-            if num_groups > 0:
+            if Ngroups_Total > 0:
                 for type_idx in range(0, TypeMax):
                     if len(fof_partid[type_idx]) > 0:
                         print("Doing PartType {0}".format(type_idx))
@@ -437,21 +463,10 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                                 ## Finally we need to grab the correct FoF group ID so we need to know which Snapshot Particle matched with which FoF Particle.  Then we use the index of where the FoF Particle is to grab the correct groupid. ##
                                 fof_partid_idx = np.int32(np.nonzero(np.in1d(fof_partid[type_idx], snapshot_partid, assume_unique = True))[0]) 
 
-                                groupids_added = []
-                                sum_parts = 0
-                                for i in fof_partid_idx: 
-                                    particle_groupid[type_idx].append(groupid[type_idx][i])
-                                    if (groupid[type_idx][i] in groupids_added) == False:
-                                        groupids_added.append(groupid[type_idx][i]) 
-                                        sum_parts += num_particles_per_group[groupid[type_idx][i]]
-                                        print("Group {0} has {1} particles.".format(groupid[type_idx][i], num_particles_per_group[groupid[type_idx][i]]))
-
                                 numpart_thisfile[type_idx] += len(ids_found)
                                 numpart_allfiles[type_idx] += len(ids_found)
-    
-                                print("The number of particles that were found is {0}.  The number of particles in the groups in this chunk (groups {1}) is {2}".format(len(ids_found), groupids_added, sum_parts)) 
-                                #assert(len(ids_found) == sum_parts)
-
+                                print("I am rank {0} and I found {1} particles from snapshot {2} in chunk {3}".format(rank, len(ids_found), snapshot_idx, core_idx))   
+ 
         ## At this point we have successfully linked all the particles in this Snapshot chunk to the FoF Groups (this can, and will at high z, be zero particles). ##
         ## Now we need to construct a hdf5 file for this chunk, WRITE OUT THE HEADER, and then write out all of the particle data. ##
         ## Note: Since an important piece of information for the header is the total number of FoF Particles within the group, we will need to write out the individual parts of the header, keep a running total of the number of particles, then loop through N_cores again to write out the cumulative information. ##
@@ -472,7 +487,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
             
             f['Header'].attrs.create("NumPart_ThisFile", numpart_thisfile, dtype = np.int32) 
 
-            if num_groups > 0:
+            if Ngroups_Total > 0:
                 for type_idx in range(0, TypeMax):
                
                     if len(particle_position[type_idx]) == 0:
@@ -489,9 +504,6 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                     name = 'PartType{0}/ParticleIDs'.format(type_idx) 
                     dset = f.create_dataset(name, dtype = np.int64, data = particle_id[type_idx][0]) # ID of each particle.
 
-                    name = 'PartType{0}/GroupNumber'.format(type_idx) 
-                    dset = f.create_dataset(name, dtype = np.int64, data = particle_groupid[type_idx]) # FoF ID of each particle.
-                
             print("Written Data to {0}.".format(fname))
 
     ## Here we have looped over all the cores. ## 
@@ -527,7 +539,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                 f['Header'].attrs.create("NumPart_Total_HighWord", numpart_highword, dtype = np.int32) # Most significant bits of total number of particles (if Number of particles is greater than 2^32 - 1). 
 
         print("Fully finished writing to snapshot {0}".format(snapshot_idx))
-    return ds, ad
+
 def check_linking_ids(snapshot_idx):
 
     for core_idx in range(0, num_cores):
@@ -557,7 +569,7 @@ def check_linking_ids(snapshot_idx):
                         assert(snap_particleids[part_idx] == fof_particleids[part_idx])
 
 
-def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None): 
+def check_linking_full(snapshot_idx, full_debug): 
     '''
     In this function we want to make sure that our list of linked particles has been correctly created.  We do this in the SIMPLEST and DUMBEST way possible and so there will be a 2 step process.
     1: Ensure that every single particle in the FoF tables have been included in my linked list output.
@@ -571,8 +583,6 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
         Snapshot number that we are doing the linking for.
     full_debug : int
         Flag for whether we want a full debug run which involves a lot of printing to screen.
-    done_linking : int
-        0 if we have to read in FoF groups or 1 if we have already done it.  If we have done the linking during this execution of the script, we already have the group information stored. 
 
     Returns
     -------
@@ -586,6 +596,39 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
 
     ## First checking all FoF particles have been included in the linked list. ##
 
+    numpart_allfiles = np.zeros((TypeMax), dtype = np.int64)    
+
+    if rank == 0:
+        fof_tab_ids = []
+
+        for core_idx in trange(num_cores):
+            fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
+
+            with h5py.File(fname, "r") as file_fof_tab:
+                Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total']
+                if(Ngroups_Total == 0):
+                    break
+               
+                Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile']
+                if(Ngroups_ThisFile == 0):
+                    continue
+                part_ids = file_fof_tab['IDs']['ID'][:]
+
+                for part_idx in range(len(part_ids)):
+                    fof_tab_ids.append(np.int64(part_ids[part_idx])) 
+
+
+        print("For snapshot {0} there are {1} groups.".format(snapshot_idx, Ngroups_Total))
+    else:
+        fof_partid = None   
+        Ngroups_Total = None
+
+    print("I am about to broadcast everything.") 
+#    fof_partid = comm.bcast(fof_tab_ids, root = 0)
+#    Ngroups_Total = comm.bcast(Ngroups_Total, root = 0)    
+
+
+    '''
     if(ds == None):
         fname_fof_tab_ids = "{1}groups_{0:03d}/fof_tab_{0:03d}.0.hdf5".format(snapshot_idx, groupdir)
         print("Reading from file {0}".format(fname_fof_tab_ids)) 
@@ -609,7 +652,7 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
             for particle_idx in range(0, int(num_particles_per_group[group_idx])): # Loop over the number of particles within this group.
                 parttype = int(halo['MemberType'][particle_idx])
                 fof_tab_ids.append(np.int64(halo['member_ids'][particle_idx]))
-
+    '''
 
     # Next we load in all the particle IDs within my linked lists. #
     print("Loaded in all the FoF groups.  Now loading the linked list.")
@@ -623,7 +666,7 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
  
         with h5py.File(fname_linked_list_ids, "r") as file_linked_list: # Open up the linked list.
 
-            if(num_groups == 0): # If there aren't any FoF groups at all for this snapshot, 
+            if(Ngroups_Total == 0): # If there aren't any FoF groups at all for this snapshot, 
                 assert(all(N == 0 for N in (file_linked_list['Header'].attrs['NumPart_ThisFile']))) # Confirm that there aren't any in the linked list,
                 continue # Then move onto the next chunk (we will still check the rest of the chunks to make 100% sure).
 
@@ -647,7 +690,9 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
 
     for type_idx in range(TypeMax):
         assert(header_sum[type_idx] == header_maxpart[type_idx])
-        assert(sum(header_maxpart) == len(fof_tab_ids))
+    
+    print("The header of my linked_list has a total of {0} particles and the fof_tab_ids has length {1}".format(len(fof_tab_ids), sum(header_maxpart)))
+    assert(sum(header_maxpart) == len(fof_tab_ids))
    
     # Now that we have both the particle IDs within the FoF groups (from Brittons) and the IDs of the particles within my linked list, ensure that ALL entries in Britton's groups are in my FoF groups. #
     print("The length of the linked list IDs is {0} and the length of the fof tab IDs is {1}".format(len(linked_list_ids), len(fof_tab_ids)))
@@ -681,7 +726,7 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
 #        fname_snapshot = "{2}snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir) 
         
         with h5py.File(fname_snapshot, "r") as file_snapshot: # Open up the linked list. 
-            if(num_groups == 0): # If there aren't any FoF groups at all for this snapshot, 
+            if(Ngroups_Total == 0): # If there aren't any FoF groups at all for this snapshot, 
                 break # Just keep going to the next snapshot then.
             for type_idx in range(TypeMax):
                 print("Doing PartType {0}".format(type_idx))
@@ -719,7 +764,9 @@ def check_linking_full(snapshot_idx, full_debug, ds=None, ad=None):
                                 assert(len(linked_list_ids_found) == len(snapshot_ids_found))
 
                                 #print("Linked list z = {0}, Snapshot z = {1}".format(file_linked_list[name]['Coordinates'][linked_list_part_idx, 2], file_snapshot[name]['Coordinates'][ids_found[snapshot_part_idx]][2]))
-                                for i in range(len(linked_list_ids_found)):                                
+                                for i in range(len(linked_list_ids_found)):                               
+                                    if(i % 10000 == 0):
+                                        print("Finished checking particle {0}".format(i)) 
                                     assert(file_linked_list[name]['Coordinates'][linked_list_ids_found[i], 0] == file_snapshot[name]['Coordinates'][ids_found[i], 0]) 
                                     assert(file_linked_list[name]['Coordinates'][linked_list_ids_found[i], 1] == file_snapshot[name]['Coordinates'][ids_found[i], 1])
                                     assert(file_linked_list[name]['Coordinates'][linked_list_ids_found[i], 2] == file_snapshot[name]['Coordinates'][ids_found[i], 2])
@@ -946,10 +993,12 @@ def find_mass():
     print("The total mass within the simulation is {0}".format(mass_tot))
 if __name__ == '__main__':
 
+    if (len(sys.argv) != 3):
+        print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
+        exit()
+
     AllVars.Set_Params_Britton()
     PlotScripts.Set_Params_Plot()
-    ds = None
-    ad = None
     #find_mass()
    
     snaplow = int(sys.argv[1])
@@ -966,7 +1015,7 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        #ds, ad = link_fof_snapshot_full(snapshot_idx, 1)
-        check_linking_full(snapshot_idx, 0, ds, ad)   
+        #link_fof_snapshot_full(snapshot_idx, 0)
+        check_linking_full(snapshot_idx, 0)
         
         #check_subfind_results(snapshot_idx) 
