@@ -4,7 +4,6 @@ matplotlib.use('Agg')
 
 import astropy
 
-
 import h5py
 import numpy as np
 import pylab as plt
@@ -12,6 +11,7 @@ from hmf import MassFunction
 from hmf import cosmo
 from astropy.cosmology import FlatLambdaCDM
 from random import sample
+import matplotlib.patches as patches
 
 import sys
 sys.path.append('/home/jseiler/SAGE-stuff/output/')
@@ -21,34 +21,36 @@ import PlotScripts
 import ReadScripts
 
 output_format = ".png"
-dilute = 50000
+dilute = 500000
 bin_width = 0.1
 
-num_cores = 11
+num_cores = 1
 TypeMax = 6
-snaplow = 20
-snaphigh = 20
+snaplow = 0
+snaphigh = 0
 
 groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 snapdir = '/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_full/'
 
 
-def plot_snapshot(filepath, snapshot_idx):
+def plot_snapshot(filepath, snapshot_idx, do_slice, do_flip):
 
     fig = plt.figure()
 
-    ax1 = fig.add_subplot(121) 
+    #ax1 = fig.add_subplot(121) 
     #ax2 = plt.axes([0.58, 0.58, 0.29, 0.29])
-    ax2 = fig.add_subplot(122) 
+    ax2 = fig.add_subplot(111) 
 
-    for core_idx in range(10, num_cores):
+    for core_idx in range(0, num_cores):
         print("Plotting chunk {0}".format(core_idx))
         if snapshot_idx < 66:
             fname = "{2}snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
         else:
             fname = "{2}snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, snapdir)
-    
+        fname = "/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/snapdir_020/snapshot_020.0.hdf5"
+
+        print("Reading from file {0}".format(fname)) 
         with h5py.File(fname, 'r') as f:
             for type_idx in range(TypeMax): 
                 print("plotting ParticleType {0}".format(type_idx))
@@ -59,48 +61,81 @@ def plot_snapshot(filepath, snapshot_idx):
                     pass
                 else:
 
-#                    w = np.where((part[:,2] > 800.0) & (part[:,2] < 804.0))[0]
 
-
-                    if(len(part) > dilute):
- 
-                        w = sample(list(np.arange(0, len(part))), dilute) 
-#                        w = np.sort(w)
+                    if (do_slice == 1):
+                        #w = np.where((part[:,2] > 800.0) & (part[:,2] < 804.0))[0]
+                        w = np.where((part[:,0] > 817.0) & (part[:,1] < 779.0))[0]
+                        print("There is {0} particles within this slice.".format(len(w)))
                     else:
-                        w = np.arange(0, len(part))  
+                        if(len(part) > dilute):    
+                            print("There are {0} particles and we are diluting it down to {1}".format(len(part), dilute)) 
+                            w = sample(list(np.arange(0, len(part))), dilute) 
+    #                        w = np.sort(w)
+                        else:
+                            w = np.arange(0, len(part))  
 
 #                    print("The x coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,0]), max(part[:,0])))
 #                    print("The y coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,1]), max(part[:,1])))
 #                    print("The z coords range from [{0:.4f}, {1:.4f}]".format(min(part[:,2]), max(part[:,2])))
    
-                    ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)
-                    ax2.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+#                    ax1.scatter(part[w,0], part[w,1], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)
+                    
+                    if(do_flip == 1):
+                        #ax2.scatter(part[w,1], part[w,0], marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+                        ax2.scatter((part[w,1] - 775.0), (part[w,0] - 775.0), marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+                    else:
+                        #ax2.scatter(part[w,0] - 775.0, part[w,1] - 775.0, marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+                        ax2.scatter(part[w,2] - 775.0, part[w,0] - 775.0, marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+#                        ax2.scatter((part[w,0] - 775.0), (part[w,1] - 775.0), marker = 'o', alpha = 0.5, color = PlotScripts.colors[type_idx-1], s = 1)                
+
+    #ax2.add_patch(patches.Rectangle((817, 779), 1.0, 1.0, fill=False))
+    #ax2.add_patch(patches.Rectangle((45.0, 45.0), 5.0, 5.0, fill=False))
+    #ax2.add_patch(patches.Rectangle((10.0, 45.0), 5.0, 5.0, fill=False))
+
+    ax2.add_patch(patches.Rectangle((45.0, 45.0), 5.0, 5.0, fill=False))
+    ax2.add_patch(patches.Rectangle((45.0, 0.0), 5.0, 10.0, fill=False))
+
 
     for type_idx in range(1, TypeMax): # PartType0 has no particles ever.
         label = 'PartType{0}'.format(type_idx)
-        ax1.scatter(np.nan, np.nan, color = PlotScripts.colors[type_idx-1], label = label)
+        ax2.scatter(np.nan, np.nan, color = PlotScripts.colors[type_idx-1], label = label)
 
-    ax1.set_xlim([0, 1600])
-    ax1.set_ylim([0, 1600])
+    #ax1.set_xlim([0, 1600])
+    #ax1.set_ylim([0, 1600])
 
-    ax2.set_xlim([774, 827])
-    ax2.set_ylim([774, 827])
+    #ax2.set_xlim([774, 827])
+    #ax2.set_ylim([774, 827])
 
-    ax1.set_xlabel("")
-    ax1.set_ylabel("y [Mpc/h]")
+    ax2.set_xlim([0, 50])
+    ax2.set_ylim([0, 50])
 
-    ax2.set_xlabel("x [Mpc/h]")    
-    ax2.set_ylabel("y [Mpc/h]")
+
+    #ax1.set_xlabel("")
+    #ax1.set_ylabel("y [Mpc/h]")
+
+    ax2.set_xlabel("z [Mpc/h]")    
+    ax2.set_ylabel("x [Mpc/h]")
     
-    leg = ax1.legend(loc='upper left', numpoints=1,labelspacing=0.1)
+    leg = ax2.legend(loc='upper left', numpoints=1,labelspacing=0.1)
     leg.draw_frame(False)  # Don't want a box frame
     for t in leg.get_texts():  # Reduce the size of the text
         t.set_fontsize(PlotScripts.global_legendsize)
         t.set_alpha(1)
 
     plt.tight_layout()
+    
+   
+    if do_flip == 1:
+        flip_tag = "flip"
+    else:
+        flip_tag = "noflip"
 
-    outputFile = './AllPart_Core{2}_{0}{1}'.format(snapshot_idx, output_format, core_idx) 
+    if do_slice == 1:
+        outputFile = './Slice_Core{2}_{0}{3}{1}'.format(snapshot_idx, output_format, core_idx, flip_tag) 
+    else:
+        outputFile = './Grid_AllPart_Core{2}_{0}{3}{1}'.format(snapshot_idx, output_format, core_idx, flip_tag)
+     
+    outputFile = './Grid_AllPart_Snapshot20_chunk0_zx.png'
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
     print('Saved file to {0}'.format(outputFile))
     plt.close()
@@ -146,6 +181,21 @@ def plot_density_grid(filepath, snapshot_idx, GridSize):
                         y_grid = int((y_pos - bound_low) * GridSize/ AllVars.BoxSize) 
                         z_grid = int((z_pos - bound_low) * GridSize/ AllVars.BoxSize) 
 
+                        if(x_grid >= GridSize):
+                            x_grid = int(GridSize -1)
+                        if(x_grid < 0):
+                            x_grid = 0
+
+                        if(y_grid >= GridSize):
+                            y_grid = int(GridSize -1)
+                        if(y_grid < 0):
+                            y_grid = 0
+
+                        if(z_grid >= GridSize):
+                            z_grid = int(GridSize -1)
+                        if(z_grid < 0):
+                            z_grid = 0
+
                         if(type_idx != 5):  
                             mass = f['Header'].attrs['MassTable'][type_idx]
                         else:
@@ -160,16 +210,16 @@ def plot_density_grid(filepath, snapshot_idx, GridSize):
     density_grid /= norm_density
 
     cut_slice = 0
-    im = ax.imshow(density_grid[:,:,cut_slice:cut_slice+127].mean(axis = -1), interpolation='bilinear', origin='low', extent =[0,AllVars.BoxSize,0,AllVars.BoxSize], cmap = 'Purples', vmin = 0.12, vmax = 25.0)
+    im = ax1.imshow(density_grid[:,:,cut_slice:cut_slice+127].mean(axis = -1), interpolation='bilinear', origin='low', extent =[0,AllVars.BoxSize,0,AllVars.BoxSize], cmap = 'Purples', vmin = 0.12, vmax = 25.0)
 
-    cbar = plt.colorbar(im, ax = ax)
+    cbar = plt.colorbar(im, ax = ax1)
     cbar.set_label(r'$\rho/\langle \rho \rangle$')
 
-    ax.set_xlabel(r'$\mathrm{x}  (h^{-1}Mpc)$')
-    ax.set_ylabel(r'$\mathrm{y}  (h^{-1}Mpc)$')
+    ax1.set_xlabel(r'$\mathrm{x}  (h^{-1}Mpc)$')
+    ax1.set_ylabel(r'$\mathrm{y}  (h^{-1}Mpc)$')
 
-    ax.set_xlim([0.0, AllVars.BoxSize])
-    ax.set_ylim([0.0, AllVars.BoxSize])
+    ax1.set_xlim([0.0, AllVars.BoxSize])
+    ax1.set_ylim([0.0, AllVars.BoxSize])
     
     outputFile = './density_grid_snapshot{0}_core{1}'.format(snapshot_idx, num_cores - 1) 
     plt.savefig(outputFile)  # Save the figure
@@ -360,7 +410,6 @@ def plot_hmf(filepath, snapshot_idx, hmf):
     print('Saved file to {0}'.format(outputFile))
     plt.close()
  
-
 if __name__ == '__main__':
 
     PlotScripts.Set_Params_Plot()
@@ -373,8 +422,8 @@ if __name__ == '__main__':
     hmf.update(cosmo_params = {"H0" : 69.5, "Om0" : 0.285}, Mmax = 11, Mmin = 6)
  
     for snapshot_idx in range(snaplow, snaphigh + 1):
-        #plot_snapshot(filepath, snapshot_idx)
-        plot_density_grid(filepath, snapshot_idx, 128)
+        #plot_snapshot(filepath, snapshot_idx, 0, 0)
+        #plot_density_grid(filepath, snapshot_idx, 128)
         #plot_halos(filepath, snapshot_idx)
         #check_bounds(filepath, snapshot_idx)
-        #plot_hmf(filepath, snapshot_idx, hmf) 
+        #plot_hmf(filepath, snapshot_idx, hmf)         

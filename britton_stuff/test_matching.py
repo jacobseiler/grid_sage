@@ -85,26 +85,28 @@ def match(N_key, N_match, method):
     if method == 0:
         print("Mine took {0} ms".format(time*1.0e3)) 
     else:
-        print("Numpy took {0} ms".format(time*1.0e3)) 
+        print("Numpy took {0} ms".format(time*1.0e3))
+ 
+    print("Mine took {0} ms".format(time*1.0e3)) 
     return time, match_fraction, match_possible_fraction
 
 ax1 = plt.subplot(121)
 ax2 = plt.subplot(122)
 
-for N_match in tqdm(np.logspace(1, 6, num = 10)):
+#for N_match in tqdm(np.logspace(1, 6, num = 10)):
 #for N_match in tqdm(range(100, 1000, 200)):
-    N_match = int(N_match)
-    N_key = 3326 # One snapshot has 3326 FoF Particles.
-    #N_match =  500 # One snapshot has 33,499,774 particles. 
-    
-    my_time, my_match_fraction, my_match_possible_fraction = match(N_key, N_match, 0)
-    numpy_time, numpy_match_fraction, numpy_match_possible_fraction = match(N_key, N_match, 1)
+    #N_match = int(N_match)
+N_key = 3326 # One snapshot has 3326 FoF Particles.
+N_match =  33499774 # One snapshot has 33,499,774 particles. 
 
-    ax1.scatter(N_match, my_time * 1.0e3, color = 'r')
-    ax2.scatter(N_match, my_match_fraction, color = 'r')
+my_time, my_match_fraction, my_match_possible_fraction = match(N_key, N_match, 0)
+numpy_time, numpy_match_fraction, numpy_match_possible_fraction = match(N_key, N_match, 1)
 
-    ax1.scatter(N_match, numpy_time * 1.0e3, color = 'b')
-    ax2.scatter(N_match, numpy_match_fraction, color = 'b')
+ax1.scatter(N_match, my_time * 1.0e3, color = 'r')
+ax2.scatter(N_match, my_match_fraction, color = 'r')
+
+ax1.scatter(N_match, numpy_time * 1.0e3, color = 'b')
+ax2.scatter(N_match, numpy_match_fraction, color = 'b')
 
 ax1.scatter(np.nan, np.nan, label = 'Mine', color = 'r')
 ax1.scatter(np.nan, np.nan, label = 'Numpy', color = 'b')

@@ -11,6 +11,7 @@ import h5py
 import numpy as np
 import pylab as plt
 from random import sample
+import time
 
 from matplotlib.patches import Circle
 import yt
@@ -28,6 +29,10 @@ comm= MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+from hmf import MassFunction
+from hmf import cosmo
+from astropy.cosmology import FlatLambdaCDM
+
 snaplow = 20 
 snaphigh = 20
 num_cores = 256 
@@ -37,6 +42,7 @@ linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_
 TypeMax = 6
 
 subfind_dir = '/lustre/projects/p134_swin/jseiler/subfind_britton/' 
+N_sub_files = 16
 
 bin_width = 0.1
  
@@ -335,36 +341,34 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
 
     numpart_allfiles = np.zeros((TypeMax), dtype = np.int64)    
 
-    if rank == 0:
-        fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
+    time.sleep(5*rank)
+    print("I am rank {0} and I have woken up".format(rank))
+    fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
 
-        for core_idx in trange(num_cores):
-            fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
+    for core_idx in range(num_cores):
+#    for core_idx in trange(num_cores):
+        print("I am rank {0} and I am on chunk {1}".format(rank, core_idx))
+        fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
 
-            with h5py.File(fname, "r") as file_fof_tab:
-                Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total']
-                if(Ngroups_Total == 0):
-                    break
-               
-                Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile']
-                if(Ngroups_ThisFile == 0):
-                    continue
-                part_ids = file_fof_tab['IDs']['ID'][:]
-                part_types = file_fof_tab['IDs']['MemberType'][:]
+        with h5py.File(fname, "r") as file_fof_tab:
+            Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total']
+            if(Ngroups_Total == 0):
+                break
+           
+            Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile']
+            if(Ngroups_ThisFile == 0):
+                continue
+            part_ids = file_fof_tab['IDs']['ID'][:]
+            part_types = file_fof_tab['IDs']['MemberType'][:]
 
-                for part_idx in range(len(part_ids)):
-                    parttype = part_types[part_idx]
-                    fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
+            for part_idx in range(len(part_ids)):
+                parttype = part_types[part_idx]
+                fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
 
+    print("I am rank {0} and I have read in {1} groups for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx))
 
-        print("For snapshot {0} there are {1} groups.".format(snapshot_idx, Ngroups_Total))
-    else:
-        fof_partid = None   
-        Ngroups_Total = None
-
-    print("I am about to broadcast everything.") 
-    fof_partid = comm.bcast(fof_partid, root = 0)
-    Ngroups_Total = comm.bcast(Ngroups_Total, root = 0)    
+#    fof_partid = comm.bcast(fof_partid, root = 0)
+#    Ngroups_Total = comm.bcast(Ngroups_Total, root = 0)    
         
     '''
     ds = yt.load(fname) # Loads in the entire FoF catalogue for this snapshot.
@@ -787,45 +791,8 @@ def check_subfind_results(snapshot_idx):
     2: The 'halos/subfind_###.catalog_particles' should contain the number of particles given by the FoF tab.
     3: The 'catalogs/subfind_###.catalog_groups_properties' contains the number of particles within each FoF halo.  These particle numbers should match those given by the FoF tab.
     '''
-
-    ## First let's load in all the FoF tab properties. ##
-
-    '''
-    fname_fof_tab_ids = "{1}groups_{0:03d}/fof_tab_{0:03d}.0.hdf5".format(snapshot_idx, groupdir)
-    
-    ds = yt.load(fname_fof_tab_ids) # Loads in the entire FoF catalogue for this snapshot.
-    ad = ds.all_data() # Container for all the data that we can work with.
-
-    # First load all the FoF particle IDs from Britton's FoF_tab files. #
-    if len(ds.field_list) == 0: 
-        num_groups = 0 
-    else:
-        num_groups = ad['Group'].shape[0] # Number of groups within this snapshot.
-        num_particles_per_group = np.zeros((num_groups), dtype = np.int32)
-        print("For snapshot {0} there are {1} groups.".format(snapshot_idx, num_groups))
-
-        fof_tab_ids = [] 
-        
-        for group_idx in trange(num_groups): # Loop over each group.
-            halo = ds.halo('Group', group_idx) # Loads all the information for the specified group.
-            num_particles_per_group[group_idx] = halo['member_ids'].shape[0]
-
-            for particle_idx in range(0, int(num_particles_per_group[group_idx])): # Loop over the number of particles within this group.
-                parttype = int(halo['MemberType'][particle_idx])
-                fof_tab_ids.append(np.int64(halo['member_ids'][particle_idx]))
-
-
-    ## Check number of groups found by SUBFIND matches the FoF tab value. ##
-
-    fname_subfind_groups = "{0}halos/subfind_{1:03d}.catalog_groups".format(subfind_dir, snapshot_idx)
-   
-    print("Reading from file {0}".format(fname_subfind_groups)) 
-    with open(fname_subfind_groups, 'rb') as file_subfind_groups:
-        N_groups = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1) 
-
-    print("Number of groups in the FoF Tab is {0}.  Number of groups from SUBFIND is {1}".format(num_groups, N_groups))
-#    assert(N_groups == num_groups)
-    '''
+    cosmol = AllVars.Set_Params_Britton() # Set the parameters for Britton's model.
+    redshift = AllVars.SnapZ[snapshot_idx]
 
     ## Do (Sub)Halo Mass Function ## 
     Halo_Desc_full = [
@@ -854,37 +821,48 @@ def check_subfind_results(snapshot_idx):
 
     # Reading SUBFIND Output #
     # Halos #
-    fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_groups_properties/subfind_{1:03d}.catalog_groups_properties.0".format(subfind_dir, snapshot_idx)
 
-    print("Reading from file {0}".format(fname_subfind_groups)) 
-    with open(fname_subfind_groups, 'rb') as file_subfind_groups:
-        file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
-        n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
-        N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
-        N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)       
-        
-        Halos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
-        
-    halo_mass_subfind = np.log10(Halos['M_vir'])
-    npart_subfind = Halos['n_particles']
-    (halo_counts_subfind, bin_edges, bin_middle) = AllVars.Calculate_Histogram(halo_mass_subfind, bin_width, 0, 6, 11)
-    (npart_binned_subfind_mean, npart_binned_subfind_std, npart_binned_subfind_N, bin_middle) = AllVars.Calculate_2D_Mean(halo_mass_subfind, npart_subfind, bin_width, 6, 11) 
+    for i_file in range(N_sub_files):
+        fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_groups_properties/subfind_{1:03d}.catalog_groups_properties.{2}".format(subfind_dir, snapshot_idx, i_file)
+
+        print("Reading from file {0}".format(fname_subfind_groups)) 
+        with open(fname_subfind_groups, 'rb') as file_subfind_groups:
+            file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+            n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+            N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
+            N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)      
+
+            print("This file contains {0} groups".format(N_groups_thisfile)) 
+            Halos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
+
+            halo_mass_subfind = np.log10(Halos['M_vir'])
+            npart_subfind = Halos['n_particles']
+
+            if (i_file == 0):
+                (halo_counts_subfind, bin_edges, bin_middle) = AllVars.Calculate_Histogram(halo_mass_subfind, bin_width, 0, 6, 11)
+            else:   
+                (halo_counts_subfind_tmp, bin_edges, bin_middle) = AllVars.Calculate_Histogram(halo_mass_subfind, bin_width, 0, 6, 11)
+                halo_counts_subfind += halo_counts_subfind_tmp
+    
+    #(npart_binned_subfind_mean, npart_binned_subfind_std, npart_binned_subfind_N, bin_middle) = AllVars.Calculate_2D_Mean(halo_mass_subfind, npart_subfind, bin_width, 6, 11) 
 
     # Subhalos #
-    fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_subgroups_properties/subfind_{1:03d}.catalog_subgroups_properties.0".format(subfind_dir, snapshot_idx)
+    '''
+    for i_file in range(N_sub_files):
+        fname_subfind_groups = "{0}catalogs/subfind_{1:03d}.catalog_subgroups_properties/subfind_{1:03d}.catalog_subgroups_properties.{2}".format(subfind_dir, snapshot_idx, i_file)
 
-    print("Reading from file {0}".format(fname_subfind_groups)) 
-    with open(fname_subfind_groups, 'rb') as file_subfind_groups:
-        file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
-        n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
-        N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
-        N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
-       
-        Subhalos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
+        print("Reading from file {0}".format(fname_subfind_groups)) 
+        with open(fname_subfind_groups, 'rb') as file_subfind_groups:
+            file_number = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+            n_files = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+            N_groups_thisfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)[0]
+            N_groups_allfile = np.fromfile(file_subfind_groups, np.dtype(np.int32), 1)
+           
+            Subhalos = np.fromfile(file_subfind_groups, Halo_Desc, N_groups_thisfile)  # Read in the galaxy structures
         
     subhalo_mass_subfind = np.log10(Subhalos['M_vir'])
     (subhalo_counts_subfind, bin_edges, bin_middle) = AllVars.Calculate_Histogram(subhalo_mass_subfind, bin_width, 0, 6, 11)
-
+    '''
     # Reading the FoF Tab #
 
     mass_fof_tab = []
@@ -893,29 +871,49 @@ def check_subfind_results(snapshot_idx):
         fname_fof_tab_ids = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
 
         with h5py.File(fname_fof_tab_ids, "r") as file_fof_tab:
-            for group_idx in range(file_fof_tab['Group']['GroupMass'].shape[0]):
-                mass_fof_tab.append(np.log10(file_fof_tab['Group']['GroupMass'][group_idx] * 1.0e10))
-                npart_fof_tab.append(file_fof_tab['Group']['GroupLen'][group_idx])
+            try:
+                Ngroups_foftab = file_fof_tab['Group']['GroupMass'].shape[0]
+            except KeyError:
+                pass
+            else:
+                for group_idx in range(Ngroups_foftab):
+                    mass_fof_tab.append(np.log10(file_fof_tab['Group']['GroupMass'][group_idx] * 1.0e10))
+                    npart_fof_tab.append(file_fof_tab['Group']['GroupLen'][group_idx])
 
-    print("The FoF Tab had {0} groups whereas SUBFIND has {1} groups.".format(len(mass_fof_tab), len(halo_mass_subfind))) 
+    print("The FoF Tab had {0} groups whereas SUBFIND has {1} groups.".format(len(mass_fof_tab), sum(halo_counts_subfind)))
     (counts_fof_tab, bin_edges, bin_middle) = AllVars.Calculate_Histogram(mass_fof_tab, bin_width, 0, 6, 11) 
     (npart_binned_fof_tab_mean, npart_binned_fof_tab_std, npart_binned_fof_tab_N, bin_middle) = AllVars.Calculate_2D_Mean(mass_fof_tab, npart_fof_tab, bin_width, 6, 11) 
 
-    ## Plotting ## 
+    # Generating theoretical HMF from hmf #
+
+    my_cosmo = cosmo.Cosmology(cosmo_model = cosmol) # Update the hmf cosmology.   
+    britton_cosmo = FlatLambdaCDM(H0 = 69.5, Om0 = 0.285, Ob0 = 0.04845)
+    hmf = MassFunction()
+    hmf.update(cosmo_params = {"H0" : 69.5, "Om0" : 0.285}, Mmax = 11, Mmin = 6, z = redshift)
+
+    massfunc = hmf.dndlog10m
+    hmf_bins = np.linspace(6.0, 11.0, num = (11.0 - 6.0) / 0.01)
+
+    ## Plotting ##
+
+    title = "z = {0:.3f}".format(redshift)
+    plt.title(title)
+ 
     # Halo Mass Function #       
-    ax1 = plt.subplot(211)
+    ax1 = plt.subplot(111)
 
     label = "Subfind" 
-    ax1.plot(bin_middle, halo_counts_subfind, label = label) 
+    ax1.plot(bin_middle, np.multiply(halo_counts_subfind / pow(AllVars.BoxSize,3) * pow(AllVars.Hubble_h, 3) / bin_width, bin_middle), label = label) 
 
     label = "FoF Tab"
-    ax1.plot(bin_middle, counts_fof_tab, label = label)
+    ax1.plot(bin_middle, np.multiply(counts_fof_tab / pow(AllVars.BoxSize,3) * pow(AllVars.Hubble_h, 3) / bin_width, bin_middle), label = label)
 
-    ax1.set_ylabel(r'Count', fontsize = PlotScripts.global_fontsize) 
+    label = "HMF"
+    ax1.plot(hmf_bins - np.log10(AllVars.Hubble_h), massfunc * pow(AllVars.Hubble_h,3), label = label)
 
+    ax1.set_ylabel(r'$\left(\frac{dn}{d\log{M}}\right) \ [\mathrm{Mpc}^{-3}]$', fontsize = PlotScripts.global_fontsize)
     ax1.set_yscale('log', nonposy='clip')
-    ax1.set_xlim([7, 11])
-    ax1.set_ylim([0, max(counts_fof_tab) + 1000]) 
+#    plt.axis([6, 11.5, 1e-6, 5e0])
 
     leg = ax1.legend(loc='upper right', numpoints=1, labelspacing=0.1)
     leg.draw_frame(False)  # Don't want a box frame
@@ -924,16 +922,16 @@ def check_subfind_results(snapshot_idx):
 
     # Subhalo Mass Function #
 
+    '''
     ax2 = plt.subplot(212)
 
     ax2.plot(bin_middle, np.divide(npart_binned_subfind_mean, npart_binned_fof_tab_mean), 'r')
 
     ax2.set_xlim([7, 11])
 
-
     ax2.set_xlabel(r'$\log_{10}\ M_{H} \:[M_{\odot}]$', fontsize = PlotScripts.global_fontsize)
     ax2.set_ylabel(r'$N_\mathrm{Subfind} / N_\mathrm{FoF Tab}$', fontsize = PlotScripts.global_fontsize) 
-
+    '''
     plt.tight_layout()
 
     outputFile = "./HaloCounts_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
@@ -941,8 +939,8 @@ def check_subfind_results(snapshot_idx):
     print('Saved file to {0}'.format(outputFile))
     plt.close()
 
-
     # Halos and Subhalos Spatial Plot #
+    '''
     ax1 = plt.subplot(111)
 
     w_halos = np.where((Halos['position_COM'][:,2] > 775.0) & (Halos['position_COM'][:,2] < 776.0))[0]
@@ -969,6 +967,8 @@ def check_subfind_results(snapshot_idx):
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
     print('Saved file to {0}'.format(outputFile))
     plt.close()
+    '''
+
 
 def find_mass():
 
@@ -1016,6 +1016,6 @@ if __name__ == '__main__':
         #check_linking_ids(snapshot_idx)
 
         #link_fof_snapshot_full(snapshot_idx, 0)
-        check_linking_full(snapshot_idx, 0)
+        #check_linking_full(snapshot_idx, 0)
         
-        #check_subfind_results(snapshot_idx) 
+        check_subfind_results(snapshot_idx) 
