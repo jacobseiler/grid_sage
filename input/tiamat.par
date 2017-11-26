@@ -2,8 +2,8 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       tiamat_NewDelayed10Myr_1Step
-OutputDir              /lustre/projects/p004_swin/jseiler/september/galaxies
+FileNameGalaxies       tiamat_Delayed10Myr
+OutputDir              /lustre/projects/p004_swin/jseiler/late_september/galaxies
 
 FirstFile         0
 LastFile          9

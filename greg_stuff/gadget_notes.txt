@@ -7,7 +7,16 @@ These are some notes for running Greg's version of GADGET that he sent to me. Si
 Syntax for running gbpGadget is:
 ``./gbpGadget <ParameterFile> [<RestartFlag>] [<RestartSnapNum>]``
 
-Since we are running only SUBFIND we set 'RestartFlag' to 3 (I believe).  Then the syntax for naming the snapshot file is,
+Since we are running only SUBFIND we set 'RestartFlag' to 3. When this flag is specified as 3 there is a block during initialization,
+``if(RestartFlag == 3)
+{
+#ifdef FOF
+ fof_fof(RestartSnapNum);
+#endif
+ endrun(0);
+}`` 
+
+Then the syntax for naming the snapshot file is,
 ``sprintf(fname, "%s/snapshots/snapshot_%03d/%s_%03d", All.OutputDir, RestartSnapNum, All.SnapshotFileBase,RestartSnapNum);``
 
 For Britton's directory structure I have changed this line to,
