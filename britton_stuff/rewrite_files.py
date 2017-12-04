@@ -14,7 +14,7 @@ from random import sample
 import time
 
 from matplotlib.patches import Circle
-import yt
+#import yt
 
 sys.path.append('/home/jseiler/SAGE-stuff/output/')
 
@@ -38,7 +38,8 @@ snaphigh = 20
 num_cores = 256 
 groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 snapdir = '/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/means/halo_1721673/dm_gadget/data/'
-linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_full/'
+#linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_full/'
+linking_outdir = '/lustre/projects/p134_swin/jseiler/tmp/'
 TypeMax = 6
 
 subfind_dir = '/lustre/projects/p134_swin/jseiler/subfind_britton/' 
@@ -318,6 +319,7 @@ def link_fof_snapshot_ids(snapshot_idx):
 
         print("Written data to {0}".format(fname))
 
+@profile
 def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     '''
     This function goes through each snapshot within the simulation and matches the FoF particles with those in the original snapshot list.  It then saves the FoF particles with the relevant properties to a separate file. 
@@ -339,79 +341,42 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     All units are kept in internal units for the simulation.
     ''' 
 
-    numpart_allfiles = np.zeros((TypeMax), dtype = np.int64)    
-
-    time.sleep(5*rank)
-    print("I am rank {0} and I have woken up".format(rank))
+    time.sleep(5*rank) # To ensure that multiple processors aren't opening the same file simultaneously.
+    numpart_allfiles = np.zeros((TypeMax), dtype = np.int64) # Array to hold the total number of particles across all chunks.  
     fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
 
-    for core_idx in range(num_cores):
-#    for core_idx in trange(num_cores):
-        print("I am rank {0} and I am on chunk {1}".format(rank, core_idx))
+    for core_idx in range(num_cores): # Loop over each chunk.
         fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
 
-        with h5py.File(fname, "r") as file_fof_tab:
-            Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total']
+        with h5py.File(fname, "r") as file_fof_tab: 
+            Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total'] # Check to see if there are any groups for this snapshot.
             if(Ngroups_Total == 0):
                 break
            
-            Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile']
+            Ngroups_ThisFile = file_fof_tab['Header'].attrs['Ngroups_ThisFile'] # Check to see if there are any groups for this chunk.
             if(Ngroups_ThisFile == 0):
                 continue
             part_ids = file_fof_tab['IDs']['ID'][:]
             part_types = file_fof_tab['IDs']['MemberType'][:]
 
-            for part_idx in range(len(part_ids)):
+            for part_idx in range(len(part_ids)): # Store the particle IDs for the groups.
                 parttype = part_types[part_idx]
                 fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
 
     print("I am rank {0} and I have read in {1} groups for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx))
-
-#    fof_partid = comm.bcast(fof_partid, root = 0)
-#    Ngroups_Total = comm.bcast(Ngroups_Total, root = 0)    
-        
-    '''
-    ds = yt.load(fname) # Loads in the entire FoF catalogue for this snapshot.
-    ad = ds.all_data() # Container for all the data that we can work with.
-
-    if len(ds.field_list) == 0: # If there aren't any groups in this file, then we skip all the linking.  Note we still need to create files to say there aren't any groups.
-        num_groups = 0 
-    else:
-        num_groups = ad['Group'].shape[0] # Number of groups within this snapshot.
-        num_particles_per_group = np.zeros((num_groups), dtype = np.int32)
-        print("For snapshot {0} there are {1} groups.".format(snapshot_idx, num_groups))
-        
-        ## Now the data format of the snapshot is split into the ParticleType groups. ##
-        ## E.g. The IDs of only particle type 1 is stored in a 'PartType1' group. ##
-        ## Hence we don't want to try and be searching for the ID of a particle type 2 within the particle type 1 group. ##
-        ## So we need to store information about the particles in length 'TypeMax' lists. ##
-
-        groupid = [[] for x in range(TypeMax)] # Array to hold the FoF Group ID for each group.
-        
-        for group_idx in trange(num_groups): # Loop over each group.
-            halo = ds.halo('Group', group_idx) # Loads all the information for the specified group.
-            num_particles_per_group[group_idx] = halo['member_ids'].shape[0]
-
-            for particle_idx in range(0, int(num_particles_per_group[group_idx])): # Loop over the number of particles within this group.
-                parttype = int(halo['MemberType'][particle_idx])
-                groupid[parttype].append(group_idx)
-                fof_partid[parttype].append(np.int64(halo['member_ids'][particle_idx]))
-        
-    '''
+            
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
     ## Now need to load in the snapshot chunk by chunk and search for the particle IDs. ##
     ## Note: Since we want to do the snapshot loading piecewise (so we don't need ~250Gb ram) we won't use yt. ##
 
-#    cores = [118]
     for core_idx in range(0 + rank, num_cores, size): 
-    #for core_idx in cores:
  
         particle_position = [[] for x in range(TypeMax)]
         particle_velocity = [[] for x in range(TypeMax)]
         particle_id = [[] for x in range(TypeMax)]
         numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
 
-        if snapshot_idx < 66: 
+        if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
             tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
         else:
             tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
@@ -439,14 +404,11 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                             pass
                         else:
                             snapshot_partid = particles['ParticleIDs']
-                            
-#                            print("Our key list (FoF Particle IDs) has length {0} and our match list (Snapshot Particle IDs) has length {1}".format(len(fof_partid[type_idx]), len(snapshot_partid)))
-         
                             ids_found = (np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)))[0] # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns the indices of those values that have a 'True'.  
                                                                                                                          # Hence 'ids_found' will be the snapshot particle INDICES for those particles in the FoF group.
                                                                                                                          # Taken from https://stackoverflow.com/questions/11483863/python-intersection-indices-numpy-array.
                           
-                            if(add_unbound_particles == 1 and len(ids_found) > 0):
+                            if(add_unbound_particles == 1 and len(ids_found) > 0): # If we are adding random particles, then add a random range of particle IDs. 
                                 ids_before = len(ids_found)  
                                 random_snap_parts = sample(range(len(snapshot_partid)), 1000)
                                 ids_found = np.append(ids_found, random_snap_parts)
@@ -455,7 +417,6 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                                 ids_found = np.unique(ids_found) 
                                 print("Ensuring that we have only unique particles we therefore have added {0} unbound particles.".format(len(ids_found) - ids_before))
                     
-
                             ids_found = ids_found.tolist() # Need to explicitly recast as a list for work with h5py.                                                                                             
                             ## Now we've found any matching IDs we need to grab the particles position/velocity. ##
                             if len(ids_found) > 0: # Checks to see if any matching IDs were found.
@@ -491,6 +452,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
             
             f['Header'].attrs.create("NumPart_ThisFile", numpart_thisfile, dtype = np.int32) 
 
+            ## Then write particle information ##
             if Ngroups_Total > 0:
                 for type_idx in range(0, TypeMax):
                
@@ -510,8 +472,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
 
             print("Written Data to {0}.".format(fname))
 
-    ## Here we have looped over all the cores. ## 
- 
+    ## Here we have looped over all the cores. ##  
     ## Now need to open up each file one last time and write the Total Number of Particles attribute. ##
 
     print("I am Task {0} and I have finished my writing.  Now waiting on other tasks to finish.".format(rank))
@@ -523,14 +484,12 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     else:
         numpart_allfiles_total = None 
         
-    comm.Reduce([numpart_allfiles, MPI.DOUBLE], [numpart_allfiles_total, MPI.DOUBLE], op = MPI.SUM, root = 0) # Sum all the stellar mass and pass to Rank 0.
+    comm.Reduce([numpart_allfiles, MPI.DOUBLE], [numpart_allfiles_total, MPI.DOUBLE], op = MPI.SUM, root = 0) # Sum all the particle numbers and send them to rank 0. 
 
     if rank == 0:
         for core_idx in range(0, num_cores):
-#        for core_idx in cores:
                     
-            fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)
-           
+            fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)           
             with h5py.File(fname, 'r+') as f:
 
                 f['Header'].attrs.create("NumPart_Total", numpart_allfiles_total, dtype = np.int32) # Least significant 32 bits of total number of particles.
@@ -934,7 +893,7 @@ def check_subfind_results(snapshot_idx):
     '''
     plt.tight_layout()
 
-    outputFile = "./HaloCounts_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
+    outputFile = "./subfind_hmf/HMF_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
     print('Saved file to {0}'.format(outputFile))
     plt.close()
@@ -991,13 +950,31 @@ def find_mass():
 
     print("The total number of particles within the simulation is {0}".format(numpart_tot))
     print("The total mass within the simulation is {0}".format(mass_tot))
+
+def create_alist():
+
+    a = []    
+    for snapshot_idx in range(92):
+        fname = "{0}groups_{1:03d}/fof_tab_{1:03d}.0.hdf5".format(groupdir, snapshot_idx)
+        
+        with h5py.File(fname, "r") as f:
+            scale = f['Header'].attrs['Time']
+            a.append(scale)
+   
+    
+    fout = "/lustre/projects/p134_swin/jseiler/subfind_britton/trees/britton/a_list.txt"
+    np.savetxt(fout, a)
+    print("Wrote scale factor list to {0}".format(fout))
+
+        
+
 if __name__ == '__main__':
 
     if (len(sys.argv) != 3):
         print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
         exit()
 
-    AllVars.Set_Params_Britton()
+    #AllVars.Set_Params_Britton()
     PlotScripts.Set_Params_Plot()
     #find_mass()
    
@@ -1005,7 +982,7 @@ if __name__ == '__main__':
     snaphigh = int(sys.argv[2])
 
     print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
- 
+
     for snapshot_idx in range(snaplow, snaphigh + 1):  
         
         #write_fof_header(snapshot_idx) 
@@ -1015,7 +992,8 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        #link_fof_snapshot_full(snapshot_idx, 0)
+        link_fof_snapshot_full(snapshot_idx, 0)
         #check_linking_full(snapshot_idx, 0)
         
-        check_subfind_results(snapshot_idx) 
+        #check_subfind_results(snapshot_idx) 
+    

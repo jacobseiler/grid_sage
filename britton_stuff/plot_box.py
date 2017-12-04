@@ -24,10 +24,10 @@ output_format = ".png"
 dilute = 500000
 bin_width = 0.1
 
-num_cores = 1
+num_cores = 256
 TypeMax = 6
-snaplow = 0
-snaphigh = 0
+snaplow = 20
+snaphigh = 21
 
 groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 snapdir = '/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/means/halo_1721673/dm_gadget/data/'
@@ -373,15 +373,15 @@ def plot_hmf(filepath, snapshot_idx, hmf):
                 have_fof_this_snap = 1 
                 for group_idx in range(Ngroups_ThisFile):
                     mass.append(np.log10(f['Group']['GroupMass'][group_idx] * 1.0e10 / AllVars.Hubble_h))
-#                    pos_x.append(f['Group']['GroupPos'][group_idx][0]) 
-#                    pos_y.append(f['Group']['GroupPos'][group_idx][1]) 
-#                    pos_z.append(f['Group']['GroupPos'][group_idx][2]) 
+                    pos_x.append(f['Group']['GroupPos'][group_idx][0]) 
+                    pos_y.append(f['Group']['GroupPos'][group_idx][1]) 
+                    pos_z.append(f['Group']['GroupPos'][group_idx][2]) 
 
-    assert(len(mass) == Ngroups_Total)
+    #assert(len(mass) == Ngroups_Total)
 
-#    print("Minimum x position is {0}, maximum x position is {1}".format(min(pos_x), max(pos_x)))
-#    print("Minimum y position is {0}, maximum y position is {1}".format(min(pos_y), max(pos_y)))
-#    print("Minimum z position is {0}, maximum z position is {1}".format(min(pos_z), max(pos_z)))
+    print("Minimum x position is {0}, maximum x position is {1}".format(min(pos_x), max(pos_x)))
+    print("Minimum y position is {0}, maximum y position is {1}".format(min(pos_y), max(pos_y)))
+    print("Minimum z position is {0}, maximum z position is {1}".format(min(pos_z), max(pos_z)))
 
     if (have_fof_this_snap == 1):
         (counts, bin_edges, bin_middle) = AllVars.Calculate_Histogram(mass, bin_width, 0, 6, 11)
@@ -406,9 +406,9 @@ def plot_hmf(filepath, snapshot_idx, hmf):
         t.set_fontsize(PlotScripts.global_legendsize)
 
     outputFile = "hmf_z{0:.2f}.png".format(z)
-    plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
-    print('Saved file to {0}'.format(outputFile))
-    plt.close()
+    #plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
+    #print('Saved file to {0}'.format(outputFile))
+    #plt.close()
  
 if __name__ == '__main__':
 
@@ -426,4 +426,4 @@ if __name__ == '__main__':
         #plot_density_grid(filepath, snapshot_idx, 128)
         #plot_halos(filepath, snapshot_idx)
         #check_bounds(filepath, snapshot_idx)
-        #plot_hmf(filepath, snapshot_idx, hmf)         
+        plot_hmf(filepath, snapshot_idx, hmf)         
