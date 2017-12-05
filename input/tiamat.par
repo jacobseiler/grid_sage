@@ -5,8 +5,8 @@
 FileNameGalaxies       tiamat_IRA
 OutputDir              /lustre/projects/p004_swin/jseiler/late_november/galaxies
 
-FirstFile         0
-LastFile          1
+FirstFile         2
+LastFile          26
 
 
 %------------------------------------------

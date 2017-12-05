@@ -974,7 +974,7 @@ if __name__ == '__main__':
         print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
         exit()
 
-    #AllVars.Set_Params_Britton()
+    AllVars.Set_Params_Britton()
     PlotScripts.Set_Params_Plot()
     #find_mass()
    
