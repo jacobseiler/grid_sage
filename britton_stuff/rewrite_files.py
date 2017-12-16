@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import sys
+sys.path.append("/home/jseiler/.local/lib/python2.7/site-packages")
 print(sys.path)
 
 import matplotlib
@@ -9,12 +10,12 @@ matplotlib.use('Agg')
 
 import h5py
 import numpy as np
+
 import pylab as plt
 from random import sample
 import time
 
 from matplotlib.patches import Circle
-#import yt
 
 sys.path.append('/home/jseiler/SAGE-stuff/output/')
 
@@ -29,9 +30,23 @@ comm= MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-from hmf import MassFunction
-from hmf import cosmo
-from astropy.cosmology import FlatLambdaCDM
+#from hmf import MassFunction
+#from hmf import cosmo
+#from astropy.cosmology import FlatLambdaCDM
+
+#import yt 
+#from yt.analysis_modules.halo_finding.halo_objects import FOFHaloFinder
+
+#yt.enable_parallelism()
+#import kdcount
+#from kdcount import cluster
+#from kdcount import models
+
+import nbodykit
+from nbodykit import * 
+from nbodykit.source.catalog import HDFCatalog
+from nbodykit.lab import FOF
+import dask.array as da
 
 snaplow = 20 
 snaphigh = 20
@@ -39,7 +54,9 @@ num_cores = 256
 groupdir = '/lustre/projects/p004_swin/bsmith/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 snapdir = '/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/means/halo_1721673/dm_gadget/data/'
 #linking_outdir = '/lustre/projects/p134_swin/jseiler/simulations/my_britton_fof_full/'
-linking_outdir = '/lustre/projects/p134_swin/jseiler/tmp/'
+linking_outdir = '/lustre/projects/p134_swin/jseiler/tmp_randompart/'
+yt_fof_outdir = '/lustre/projects/p134_swin/jseiler/tmp/'
+nbodykit_fof_outdir = '/lustre/projects/p134_swin/jseiler/nbodykit_fofs/'
 TypeMax = 6
 
 subfind_dir = '/lustre/projects/p134_swin/jseiler/subfind_britton/' 
@@ -319,7 +336,6 @@ def link_fof_snapshot_ids(snapshot_idx):
 
         print("Written data to {0}".format(fname))
 
-@profile
 def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     '''
     This function goes through each snapshot within the simulation and matches the FoF particles with those in the original snapshot list.  It then saves the FoF particles with the relevant properties to a separate file. 
@@ -363,8 +379,8 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                 parttype = part_types[part_idx]
                 fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
 
-    print("I am rank {0} and I have read in {1} groups for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx))
-            
+    print("I am rank {0} and I have read in {1} groups with a total of {3} particles for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx, len(fof_partid[1])))
+
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
     ## Now need to load in the snapshot chunk by chunk and search for the particle IDs. ##
     ## Note: Since we want to do the snapshot loading piecewise (so we don't need ~250Gb ram) we won't use yt. ##
@@ -381,22 +397,22 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
         else:
             tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
         fname = snapdir + tmp 
-
-        print("Doing chunk {0}".format(core_idx))
+    
         with h5py.File(fname, 'r') as f: 
 
             ## First grab some attributes that will be used for this snapshot. ##
 
             BoxSize = f['Header'].attrs['BoxSize'] # Size of the simulation box (in Mpc/h).
             Time = f['Header'].attrs['Time'] # Scale factor. 
+            Redshift = f['Header'].attrs['Redshift'] # Redshift 
             Omega_m = f['Header'].attrs['Omega0'] # Matter density.
             Omega_l = f['Header'].attrs['OmegaLambda'] # Dark energy density.
             particle_mass = f['Header'].attrs['MassTable'] # Table of particle masses (length equal to TypeMax)
+            HubbleParam = f['Header'].attrs['HubbleParam'] # Hubble Parameters
 
             if Ngroups_Total > 0:
                 for type_idx in range(0, TypeMax):
                     if len(fof_partid[type_idx]) > 0:
-                        print("Doing PartType {0}".format(type_idx))
                         tmp = 'PartType{0}'.format(type_idx)
                         try:
                             particles = f[tmp]
@@ -446,10 +462,11 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
             f['Header'].attrs.create("NumFilesPerSnapshot", num_cores, dtype = np.int32)
             f['Header'].attrs.create("BoxSize", BoxSize, dtype = np.float32)
             f['Header'].attrs.create("Time", Time, dtype = np.float32)
+            f['Header'].attrs.create("Redshift", Redshift, dtype = np.float32)
             f['Header'].attrs.create("Omega0", Omega_m, dtype = np.float32)
             f['Header'].attrs.create("OmegaLambda", Omega_l, dtype = np.float32)
             f['Header'].attrs.create("MassTable", particle_mass, dtype = np.float32)
-            
+            f['Header'].attrs.create("HubbleParam", HubbleParam, dtype = np.float32)            
             f['Header'].attrs.create("NumPart_ThisFile", numpart_thisfile, dtype = np.int32) 
 
             ## Then write particle information ##
@@ -462,6 +479,9 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                     f.create_group(name)
                     
                     name = 'PartType{0}/Coordinates'.format(type_idx)
+                    dset = f.create_dataset(name, dtype = np.float32, data = particle_position[type_idx][0]) # Position of each particle (Mpc/h).
+
+                    name = 'PartType{0}/Position'.format(type_idx)
                     dset = f.create_dataset(name, dtype = np.float32, data = particle_position[type_idx][0]) # Position of each particle (Mpc/h).
 
                     name = 'PartType{0}/Velocities'.format(type_idx) 
@@ -484,7 +504,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     else:
         numpart_allfiles_total = None 
         
-    comm.Reduce([numpart_allfiles, MPI.DOUBLE], [numpart_allfiles_total, MPI.DOUBLE], op = MPI.SUM, root = 0) # Sum all the particle numbers and send them to rank 0. 
+    comm.Reduce([numpart_allfiles, MPI.INT], [numpart_allfiles_total, MPI.INT], op = MPI.SUM, root = 0) # Sum all the particle numbers and send them to rank 0. 
 
     if rank == 0:
         for core_idx in range(0, num_cores):
@@ -966,7 +986,159 @@ def create_alist():
     np.savetxt(fout, a)
     print("Wrote scale factor list to {0}".format(fout))
 
+def load_snapshot_chunk_positions(snapshot_idx, core_idx):
+
+    if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
+        tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
+    else:
+        tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
+    fname = snapdir + tmp 
+    
+    fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.{0}.hdf5".format(core_idx)
+    print("Reading file {0}".format(fname))
+
+    with h5py.File(fname, 'r') as f:             
+        tmp = 'PartType1'
+        try:
+            particles = f[tmp]
+        except KeyError:
+            pass
+        else:
+            particle_position = particles['Coordinates'][:]                
+    
+    return particle_position
+
+def create_fof_yt(snapshot_idx, outdir):    
+
+    if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
+        tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx)
+    else:
+        tmp = "snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx)
+
+    fname = snapdir + tmp
+    #fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.0.hdf5"
+
+    unit_base = {'length' : (1.0, "Mpc/h"), 'mass' : (1.0e10, "Msun/h"), 'velocity' : (1.0, "km/s")} # Set the yt units to the GADGET ones.
+
+    ds = yt.load(fname)
+    halos = FOFHaloFinder(ds, link = -0.0049, dm_only = False, ptype = "PartType1", padding = 0.2)
+
+    outname = "{0}yt_fof_tab_{1}".format(outdir, snapshot_idx)
+    halos.write_particle_lists(yt_fof_outdir)
+    print("Successfully wrote to {0}".format(outname))
+
+def load_snapshot_positions(snapshot_idx):
+
+    if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
+        tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx)
+    else:
+        tmp = "snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx)
+    fname = snapdir + tmp 
+
+    fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.0.hdf5" 
+    print("Reading file {0}".format(fname))
+    with h5py.File(fname, 'r') as f:
+        NumPart_Total = f['Header'].attrs['NumPart_Total'] # Determine how many particles there are for this snapshot
+        N_files = f['Header'].attrs['NumFilesPerSnapshot'] # How many files are the particles split over 
         
+        particle_pos = np.empty((NumPart_Total[1],3))
+
+    offset = 0
+    for core_idx in range(N_files):
+        particle_pos_thisfile = load_snapshot_chunk_positions(snapshot_idx, core_idx) 
+        particle_pos[offset:offset+len(particle_pos_thisfile)] = particle_pos_thisfile
+        offset += len(particle_pos_thisfile)
+    
+    return particle_pos    
+ 
+def create_fof_kdcount(snapshot_idx):
+
+    pos = load_snapshot_positions(snapshot_idx)
+    
+    data = kdcount.models.dataset(pos)
+    fofs = kdcount.cluster.fof(data, linking_length=0.00488, np = 2)
+
+    print("For snapshot {0} there are {1} groups consisting of {2} particles according to kdcount.".format(snapshot_idx, fofs.N, sum(fofs.length)))
+    print(fofs.indices[0])
+
+def create_fof_nbodykit(snapshot_idx, link_length, outdir):
+
+    if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
+        tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.*".format(snapshot_idx) # nbodykit uses '*' to load all sub_files.
+        onefile = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx) # Going to read some attributes from this file. 
+    else:
+        tmp = "snapdir_{0:03d}/snapshot_{0:03d}.*".format(snapshot_idx)
+        onefile = "snapdir_{0:03d}/snapshot_{0:03d}.0.hdf5".format(snapshot_idx)
+    fname = snapdir + tmp 
+    fname_onefile = snapdir + onefile
+
+    print("Reading file {0}".format(fname_onefile))
+    
+    with h5py.File(fname_onefile, "r") as f:
+
+        BoxSize = f['Header'].attrs['BoxSize'] # Size of the simulation box (in Mpc/h).
+        Time = f['Header'].attrs['Time'] # Scale factor. 
+        Redshift = f['Header'].attrs['Redshift'] # Redshift 
+        Omega_m = f['Header'].attrs['Omega0'] # Matter density.
+        Omega_l = f['Header'].attrs['OmegaLambda'] # Dark energy density.
+        particle_mass = f['Header'].attrs['MassTable'] # Table of particle masses (length equal to TypeMax)
+        HubbleParam = f['Header'].attrs['HubbleParam'] # Hubble Parameters
+
+
+    fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.*" 
+    print("Reading file {0}".format(fname))
+
+    cosmology = nbodykit.cosmology.cosmology.Cosmology(h = HubbleParam, Omega0_cdm = Omega_m)
+
+    particles = HDFCatalog(fname, root="PartType1") # Only load the correct particles.
+
+    particles['Position'] = particles['Coordinates'] # nbodykit requires the catalog to have these specific parameters.
+    particles['Velocity'] = particles['Velocities'] 
+    particles.attrs['BoxSize'] = [BoxSize, BoxSize, BoxSize] # Output halos will be in reference to the zoom-in box.
+    particles.attrs['Nmesh'] = [0, 0, 0] # Not used because we are using an absolute linking length but still requires a dummy input.
+
+    fof = FOF(particles, linking_length=link_length, nmin = 20, absolute=True)
+    halos = fof.to_halos(particle_mass[1], cosmology, Redshift) # Gets all the halo positions/masses/etc.
+    # Function parameters are mass of the particle (using units of 1.0e10 Msun/h), cosmology of the simulation and the redshift of this snapshot.
+
+    ## All the halos have been linked together now let's slice it into numpy arrays and save as HDF5 ##
+
+    halo_position = np.array(halos['Position'])
+    halo_mass = np.array(halos['Mass'])
+    halo_velocity = np.array(halos['Velocity'])
+    halo_particle_ids = np.array(fof.labels)
+    
+    # Save time
+
+    fname = "{0}groups_{1:03d}/nbodykit_fof_tab_{1:03d}.hdf5".format(outdir, snapshot_idx)
+   
+    with h5py.File(fname, 'w') as f:
+        f.create_group("Header") 
+
+        ## Write local header attributes. ##
+
+        f['Header'].attrs.create("BoxSize", BoxSize, dtype = np.float32)
+        f['Header'].attrs.create("Time", Time, dtype = np.float32)
+        f['Header'].attrs.create("Redshift", Redshift, dtype = np.float32)
+        f['Header'].attrs.create("Omega0", Omega_m, dtype = np.float32)
+        f['Header'].attrs.create("OmegaLambda", Omega_l, dtype = np.float32)
+        f['Header'].attrs.create("HubbleParam", HubbleParam, dtype = np.float32)            
+
+        name = 'Position' 
+        dset = f.create_dataset(name, dtype = np.float32, data = halo_position) 
+        f[name].attrs.create("Units", "Mpc/h")
+
+        name = 'Mass' 
+        dset = f.create_dataset(name, dtype = np.float32, data = halo_mass)
+        f[name].attrs.create("Units", "1.0e10 Msun/h")
+                   
+        name = 'Velocity' 
+        dset = f.create_dataset(name, dtype = np.float32, data = halo_velocity)
+        f[name].attrs.create("Units", "km")
+
+        name = 'ParticleID'
+        dset = f.create_dataset(name, dtype = np.float32, data = halo_particle_ids)
+ 
 
 if __name__ == '__main__':
 
@@ -992,8 +1164,11 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        link_fof_snapshot_full(snapshot_idx, 0)
+        link_fof_snapshot_full(snapshot_idx, 1)
         #check_linking_full(snapshot_idx, 0)
         
         #check_subfind_results(snapshot_idx) 
-    
+
+        #create_fof_kdcount(snapshot_idx)
+        #create_fof_yt(snapshot_idx, yt_fof_outdir)
+        create_fof_nbodykit(snapshot_idx, 0.0049, nbodykit_fof_outdir)
