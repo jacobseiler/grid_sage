@@ -5,10 +5,10 @@ import sys
 sys.path.append("/home/jseiler/.local/lib/python2.7/site-packages")
 print(sys.path)
 
+
 import matplotlib
 matplotlib.use('Agg')
 
-import h5py
 import numpy as np
 
 import pylab as plt
@@ -22,6 +22,9 @@ sys.path.append('/home/jseiler/SAGE-stuff/output/')
 import AllVars
 import PlotScripts
 import ReadScripts
+
+
+import h5py
 
 from mpi4py import MPI
 
@@ -47,6 +50,10 @@ from nbodykit import *
 from nbodykit.source.catalog import HDFCatalog
 from nbodykit.lab import FOF
 import dask.array as da
+
+import os
+from os.path import getsize as getFileSize
+
 
 snaplow = 20 
 snaphigh = 20
@@ -336,6 +343,24 @@ def link_fof_snapshot_ids(snapshot_idx):
 
         print("Written data to {0}".format(fname))
 
+def read_rockstar_fof_particles(snapshot_idx, array_to_fill):
+
+    fname = "/lustre/projects/p134_swin/jseiler/rockstar_particles/snap{0:03d}".format(snapshot_idx)
+ 
+    filesize = os.stat(fname).st_size
+    print("File is {0} bytes and hence has {1} IDs".format(filesize, filesize / 8))
+    Npart = int(filesize / 8)
+
+    fof_partid = np.fromfile(fname, dtype = np.int64, count = Npart)
+
+    print(array_to_fill)
+    for i in range(len(fof_partid)):
+        array_to_fill[1].append(fof_partid[i])
+    
+    print(array_to_fill[1][0:100])
+    return array_to_fill 
+    
+
 def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     '''
     This function goes through each snapshot within the simulation and matches the FoF particles with those in the original snapshot list.  It then saves the FoF particles with the relevant properties to a separate file. 
@@ -361,6 +386,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     numpart_allfiles = np.zeros((TypeMax), dtype = np.int64) # Array to hold the total number of particles across all chunks.  
     fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
 
+    '''
     for core_idx in range(num_cores): # Loop over each chunk.
         fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
 
@@ -378,7 +404,10 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
             for part_idx in range(len(part_ids)): # Store the particle IDs for the groups.
                 parttype = part_types[part_idx]
                 fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
+    '''
 
+    fof_partid = read_rockstar_fof_particles(snapshot_idx, fof_partid)
+    Ngroups_Total = 100
     print("I am rank {0} and I have read in {1} groups with a total of {3} particles for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx, len(fof_partid[1])))
 
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
@@ -1097,7 +1126,10 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
     particles.attrs['BoxSize'] = [BoxSize, BoxSize, BoxSize] # Output halos will be in reference to the zoom-in box.
     particles.attrs['Nmesh'] = [0, 0, 0] # Not used because we are using an absolute linking length but still requires a dummy input.
 
+    print("I am rank {0} and I have {1} particles.".format(rank, particles['Coordinates'].shape[0]))
+    print("Doing the FoF")
     fof = FOF(particles, linking_length=link_length, nmin = 20, absolute=True)
+    print("Now generating the halos")
     halos = fof.to_halos(particle_mass[1], cosmology, Redshift) # Gets all the halo positions/masses/etc.
     # Function parameters are mass of the particle (using units of 1.0e10 Msun/h), cosmology of the simulation and the redshift of this snapshot.
 
@@ -1107,10 +1139,13 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
     halo_mass = np.array(halos['Mass'])
     halo_velocity = np.array(halos['Velocity'])
     halo_particle_ids = np.array(fof.labels)
-    
-    # Save time
 
-    fname = "{0}groups_{1:03d}/nbodykit_fof_tab_{1:03d}.hdf5".format(outdir, snapshot_idx)
+    particles_in_halos_idx = np.where((fof.labels != 0))[0] # Particles that do not belong to a halo have a label 0.
+    particle_in_halos = particles['ParticleIDs'][particles_in_halos_idx] # Pulls the particle IDs of those particles in a FoF halo. 
+     
+    # The halos are scattered evenly across all ranks so each needs to save their own properties. 
+
+    fname = "{0}groups_{1:03d}/nbodykit_fof_tab_{1:03d}.{2}.hdf5".format(outdir, snapshot_idx, rank)
    
     with h5py.File(fname, 'w') as f:
         f.create_group("Header") 
@@ -1136,9 +1171,13 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
         dset = f.create_dataset(name, dtype = np.float32, data = halo_velocity)
         f[name].attrs.create("Units", "km")
 
-        name = 'ParticleID'
-        dset = f.create_dataset(name, dtype = np.float32, data = halo_particle_ids)
- 
+        name = 'HaloParticleIDs'
+        dset = f.create_dataset(name, dtype = np.int64, data = halo_particle_ids)
+
+        name = 'ParticleIDs'
+        dset = f.create_dataset(name, dtype = np.int64, data = particle_in_halos)
+    
+        print("Successfully wrote to file {0}".format(fname))
 
 if __name__ == '__main__':
 
@@ -1164,11 +1203,11 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        link_fof_snapshot_full(snapshot_idx, 1)
+        link_fof_snapshot_full(snapshot_idx, 0)
         #check_linking_full(snapshot_idx, 0)
         
         #check_subfind_results(snapshot_idx) 
 
         #create_fof_kdcount(snapshot_idx)
         #create_fof_yt(snapshot_idx, yt_fof_outdir)
-        create_fof_nbodykit(snapshot_idx, 0.0049, nbodykit_fof_outdir)
+        #create_fof_nbodykit(snapshot_idx, 0.0049, nbodykit_fof_outdir)
