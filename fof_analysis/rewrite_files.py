@@ -3,8 +3,6 @@ from __future__ import print_function
 
 import sys
 sys.path.append("/home/jseiler/.local/lib/python2.7/site-packages")
-print(sys.path)
-
 
 import matplotlib
 matplotlib.use('Agg')
@@ -26,12 +24,12 @@ import ReadScripts
 
 import h5py
 
-from mpi4py import MPI
+#from mpi4py import MPI
 
 from tqdm import tqdm, trange
-comm= MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+#comm= MPI.COMM_WORLD
+#rank = comm.Get_rank()
+#size = comm.Get_size()
 
 #from hmf import MassFunction
 #from hmf import cosmo
@@ -45,11 +43,11 @@ size = comm.Get_size()
 #from kdcount import cluster
 #from kdcount import models
 
-import nbodykit
-from nbodykit import * 
-from nbodykit.source.catalog import HDFCatalog
-from nbodykit.lab import FOF
-import dask.array as da
+#import nbodykit
+#from nbodykit import * 
+#from nbodykit.source.catalog import HDFCatalog
+#from nbodykit.lab import FOF
+#import dask.array as da
 
 import os
 from os.path import getsize as getFileSize
@@ -431,7 +429,7 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
 
             ## First grab some attributes that will be used for this snapshot. ##
 
-            BoxSize = f['Header'].attrs['BoxSize'] # Size of the simulation box (in Mpc/h).
+            BoxSize = f['Header'].attrs['BoxSize'] # Size of the simulation box (in Mpc/h).A
             Time = f['Header'].attrs['Time'] # Scale factor. 
             Redshift = f['Header'].attrs['Redshift'] # Redshift 
             Omega_m = f['Header'].attrs['Omega0'] # Matter density.
@@ -1114,7 +1112,7 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
         HubbleParam = f['Header'].attrs['HubbleParam'] # Hubble Parameters
 
 
-    fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.*" 
+    #fname = "/lustre/projects/p134_swin/jseiler/tmp/groups_020/my_fof_tab_020.*" 
     print("Reading file {0}".format(fname))
 
     cosmology = nbodykit.cosmology.cosmology.Cosmology(h = HubbleParam, Omega0_cdm = Omega_m)
@@ -1126,13 +1124,15 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
     particles.attrs['BoxSize'] = [BoxSize, BoxSize, BoxSize] # Output halos will be in reference to the zoom-in box.
     particles.attrs['Nmesh'] = [0, 0, 0] # Not used because we are using an absolute linking length but still requires a dummy input.
 
-    print("I am rank {0} and I have {1} particles.".format(rank, particles['Coordinates'].shape[0]))
+    print("I have {0} particles.".format(particles['Coordinates'].shape[0]))
+
     print("Doing the FoF")
     fof = FOF(particles, linking_length=link_length, nmin = 20, absolute=True)
     print("Now generating the halos")
     halos = fof.to_halos(particle_mass[1], cosmology, Redshift) # Gets all the halo positions/masses/etc.
     # Function parameters are mass of the particle (using units of 1.0e10 Msun/h), cosmology of the simulation and the redshift of this snapshot.
 
+    exit()
     ## All the halos have been linked together now let's slice it into numpy arrays and save as HDF5 ##
 
     halo_position = np.array(halos['Position'])
@@ -1179,11 +1179,33 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
     
         print("Successfully wrote to file {0}".format(fname))
 
+def read_kali(kali_dir, snapshot_idx):
+
+    fname = "{0}groups_{1:03d}/group_ids_{1:03d}.0".format(kali_dir, snapshot_idx)
+
+    print("Reading from file {0}".format(fname))
+    fin = open(fname, 'rb')
+
+    Ngroups = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of groups in this file.
+    TotNgroups = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of groups across all files.
+    Nids = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of IDs in this file.
+    TotNids = np.fromfile(fin, dtype=np.int64, count = 1)[0] # Number of IDs across all files.
+    Ntask = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of tasks used for writing. 
+    Offset = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of IDs in previous files. 
+    ids = np.fromfile(fin, dtype=np.int64, count = Nids) # Particle IDs for these groups.
+   
+    fin.close()    
+
+    print("For snapshot {0} there are {1} groups with {2} IDs.".format(snapshot_idx, TotNgroups, TotNids))
+    #print(ids)
+
 if __name__ == '__main__':
 
     if (len(sys.argv) != 3):
         print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
         exit()
+
+    kali_dir = "/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/"
 
     AllVars.Set_Params_Britton()
     PlotScripts.Set_Params_Plot()
@@ -1195,7 +1217,7 @@ if __name__ == '__main__':
     print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
 
     for snapshot_idx in range(snaplow, snaphigh + 1):  
-        
+        read_kali(kali_dir, snapshot_idx)       
         #write_fof_header(snapshot_idx) 
         #write_fof_groups(snapshot_idx)
         #write_snapshot_header(snapshot_idx)
@@ -1203,7 +1225,7 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        link_fof_snapshot_full(snapshot_idx, 0)
+        #link_fof_snapshot_full(snapshot_idx, 0)
         #check_linking_full(snapshot_idx, 0)
         
         #check_subfind_results(snapshot_idx) 
