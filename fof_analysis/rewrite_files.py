@@ -24,12 +24,12 @@ import ReadScripts
 
 import h5py
 
-#from mpi4py import MPI
+from mpi4py import MPI
 
 from tqdm import tqdm, trange
-#comm= MPI.COMM_WORLD
-#rank = comm.Get_rank()
-#size = comm.Get_size()
+comm= MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 #from hmf import MassFunction
 #from hmf import cosmo
@@ -359,7 +359,7 @@ def read_rockstar_fof_particles(snapshot_idx, array_to_fill):
     return array_to_fill 
     
 
-def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
+def link_fof_snapshot_full(snapshot_idx, group_dir, snap_dir, linked_outdir, n_files, add_unbound_particles=0):
     '''
     This function goes through each snapshot within the simulation and matches the FoF particles with those in the original snapshot list.  It then saves the FoF particles with the relevant properties to a separate file. 
     Note: This function is different to link_fof_snapshots_ids() in that it saves a file containing the full information regarding the FoF particle, not merely its ID/GroupID. 
@@ -385,8 +385,8 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     fof_partid = [[] for x in range(TypeMax)] # Array to hold the Particle ID for each particle within each group.
 
     '''
-    for core_idx in range(num_cores): # Loop over each chunk.
-        fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, groupdir, core_idx)
+    for core_idx in range(n_files): # Loop over each chunk.
+        fname = "{1}groups_{0:03d}/fof_tab_{0:03d}.{2}.hdf5".format(snapshot_idx, group_dir, core_idx)
 
         with h5py.File(fname, "r") as file_fof_tab: 
             Ngroups_Total = file_fof_tab['Header'].attrs['Ngroups_Total'] # Check to see if there are any groups for this snapshot.
@@ -404,26 +404,32 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
                 fof_partid[parttype].append(np.int64(part_ids[part_idx])) 
     '''
 
-    fof_partid = read_rockstar_fof_particles(snapshot_idx, fof_partid)
-    Ngroups_Total = 100
+    fof_partid[1], Ngroups_Total = read_kali_fof_ids_full(group_dir, snapshot_idx, 1008)  
+    
     print("I am rank {0} and I have read in {1} groups with a total of {3} particles for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx, len(fof_partid[1])))
 
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
     ## Now need to load in the snapshot chunk by chunk and search for the particle IDs. ##
     ## Note: Since we want to do the snapshot loading piecewise (so we don't need ~250Gb ram) we won't use yt. ##
-
-    for core_idx in range(0 + rank, num_cores, size): 
+        
+    AllVars.ensure_dir("{1}groups_{0:03d}/".format(snapshot_idx, linked_outdir))
+    
+    for core_idx in range(0 + rank, n_files, size): 
  
         particle_position = [[] for x in range(TypeMax)]
         particle_velocity = [[] for x in range(TypeMax)]
         particle_id = [[] for x in range(TypeMax)]
         numpart_thisfile = np.zeros((TypeMax), dtype = np.int32)
 
-        if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
-            tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
-        else:
-            tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
-        fname = snapdir + tmp 
+        #if snapshot_idx < 66: # Slightly different naming scheme depending upon the snapshot number.
+        #    tmp = "snapdir_{0:03d}/snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
+        #else:
+        #    tmp = "snapdir_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
+
+        tmp = "snapshot_{0:03d}/snapshot_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx)
+
+
+        fname = snap_dir + tmp 
     
         with h5py.File(fname, 'r') as f: 
 
@@ -479,14 +485,14 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
         ## Now we need to construct a hdf5 file for this chunk, WRITE OUT THE HEADER, and then write out all of the particle data. ##
         ## Note: Since an important piece of information for the header is the total number of FoF Particles within the group, we will need to write out the individual parts of the header, keep a running total of the number of particles, then loop through N_cores again to write out the cumulative information. ##
 
-        fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)
+        fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linked_outdir)
        
         with h5py.File(fname, 'w') as f:
             f.create_group("Header") 
     
             ## Write local header attributes. ##
 
-            f['Header'].attrs.create("NumFilesPerSnapshot", num_cores, dtype = np.int32)
+            f['Header'].attrs.create("NumFilesPerSnapshot", n_files, dtype = np.int32)
             f['Header'].attrs.create("BoxSize", BoxSize, dtype = np.float32)
             f['Header'].attrs.create("Time", Time, dtype = np.float32)
             f['Header'].attrs.create("Redshift", Redshift, dtype = np.float32)
@@ -534,9 +540,9 @@ def link_fof_snapshot_full(snapshot_idx, add_unbound_particles):
     comm.Reduce([numpart_allfiles, MPI.INT], [numpart_allfiles_total, MPI.INT], op = MPI.SUM, root = 0) # Sum all the particle numbers and send them to rank 0. 
 
     if rank == 0:
-        for core_idx in range(0, num_cores):
+        for core_idx in range(0, n_files):
                     
-            fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)           
+            fname = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linked_outdir)           
             with h5py.File(fname, 'r+') as f:
 
                 f['Header'].attrs.create("NumPart_Total", numpart_allfiles_total, dtype = np.int32) # Least significant 32 bits of total number of particles.
@@ -671,7 +677,7 @@ def check_linking_full(snapshot_idx, full_debug):
     header_maxpart = np.zeros((TypeMax))
 
     for core_idx in range(num_cores): 
-        fname_linked_list_ids = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)
+        fname_linked_list_ids = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linked_outdir)
         print("Chunk {0}".format(core_idx))       
  
         with h5py.File(fname_linked_list_ids, "r") as file_linked_list: # Open up the linked list.
@@ -761,7 +767,7 @@ def check_linking_full(snapshot_idx, full_debug):
                         # Zip + Enumerate # 
 #                        for snapshot_part_idx, partid enumerate(snapshot_partid[ids_found]):
 
-                        fname_linked_list = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linking_outdir)
+                        fname_linked_list = "{2}groups_{0:03d}/my_fof_tab_{0:03d}.{1}.hdf5".format(snapshot_idx, core_idx, linked_outdir)
                         with h5py.File(fname_linked_list, "r") as file_linked_list:
                             try:
                                 linked_list_partid = file_linked_list[name]['ParticleIDs'][:]
@@ -1179,9 +1185,7 @@ def create_fof_nbodykit(snapshot_idx, link_length, outdir):
     
         print("Successfully wrote to file {0}".format(fname))
 
-def read_kali(kali_dir, snapshot_idx):
-
-    fname = "{0}groups_{1:03d}/group_ids_{1:03d}.0".format(kali_dir, snapshot_idx)
+def read_kali_fof_ids_single(fname):
 
     print("Reading from file {0}".format(fname))
     fin = open(fname, 'rb')
@@ -1196,8 +1200,47 @@ def read_kali(kali_dir, snapshot_idx):
    
     fin.close()    
 
-    print("For snapshot {0} there are {1} groups with {2} IDs.".format(snapshot_idx, TotNgroups, TotNids))
-    #print(ids)
+    return ids
+
+def kali_fof_ids_stats(fname):
+
+    print("Reading from file {0}".format(fname))
+    fin = open(fname, 'rb')
+
+    Ngroups = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of groups in this file.
+    TotNgroups = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of groups across all files.
+    Nids = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of IDs in this file.
+    TotNids = np.fromfile(fin, dtype=np.int64, count = 1)[0] # Number of IDs across all files.
+    Ntask = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of tasks used for writing. 
+    Offset = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of IDs in previous files. 
+    ids = np.fromfile(fin, dtype=np.int64, count = Nids) # Particle IDs for these groups.
+    
+    print("For snapshot {0} there are {1} groups with {2} IDs.".format(snapshot_idx, TotNgroups, TotNids)) 
+   
+    fin.close()    
+
+    return TotNgroups
+
+def read_kali_fof_ids_full(kali_dir, snapshot_idx, n_files):
+    
+    fname = "{0}groups_{1:03d}/group_ids_{1:03d}.0".format(kali_dir, snapshot_idx)
+    TotNgroups = kali_fof_ids_stats(fname)
+
+    fof_ids = []
+    for i_file in range(n_files):
+
+        fname = "{0}groups_{1:03d}/group_ids_{1:03d}.{2}".format(kali_dir, snapshot_idx, i_file)
+        ids_i_file = read_kali_fof_ids_single(fname)
+
+        print("For subfile {0} there is {1} IDs".format(i_file, len(ids_i_file)))
+
+        for i in ids_i_file: 
+            fof_ids.append(i)
+
+    print("Done!")
+    print("Read in {0} total IDs".format(len(fof_ids)))
+
+    return fof_ids, TotNgroups
 
 if __name__ == '__main__':
 
@@ -1205,9 +1248,12 @@ if __name__ == '__main__':
         print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
         exit()
 
-    kali_dir = "/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/"
+    kali_fof_dir = "/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/"
+    kali_snap_dir = "/lustre/projects/p004_swin/msinha/reionization/simulations/Planck/Kali/2400/8364/snapshots/"
+    kali_linked_outdir = "/lustre/projects/p134_swin/jseiler/kali/pseudo_snapshots/"
 
-    AllVars.Set_Params_Britton()
+    AllVars.Set_Params_Kali()
+    #AllVars.Set_Params_Britton()
     PlotScripts.Set_Params_Plot()
     #find_mass()
    
@@ -1217,7 +1263,7 @@ if __name__ == '__main__':
     print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
 
     for snapshot_idx in range(snaplow, snaphigh + 1):  
-        read_kali(kali_dir, snapshot_idx)       
+        #fof_ids = read_kali_fof_ids_full(kali_dir, snapshot_idx, 1008)
         #write_fof_header(snapshot_idx) 
         #write_fof_groups(snapshot_idx)
         #write_snapshot_header(snapshot_idx)
@@ -1225,7 +1271,7 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        #link_fof_snapshot_full(snapshot_idx, 0)
+        link_fof_snapshot_full(snapshot_idx, kali_fof_dir, kali_snap_dir, kali_linked_outdir, 256)
         #check_linking_full(snapshot_idx, 0)
         
         #check_subfind_results(snapshot_idx) 
