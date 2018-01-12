@@ -17,6 +17,15 @@
 #define OUTPUT_BUFFER_SIZE 1000000
 #define VERSION_MAX_SIZE 12
 
+#define XASSERT(EXP, ...)                                              \
+    do { if (!(EXP)) {                                                  \
+            printf("Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
+            printf(__VA_ARGS__);                                        \
+            fflush(stdout);                                             \
+            exit(EXIT_FAILURE);                                         \
+        } \
+    } while (0)
+
 struct binary_output_header {
   uint64_t magic;
   int64_t snap, chunk;
@@ -133,26 +142,25 @@ int32_t sort_particles(int64_t *part_id, int64_t N_part)
 
 }
 
-int32_t check_duplicate_particles(int64_t *part_id, int64_t N_part)
+int64_t check_duplicate_particles(int64_t *part_id, int64_t N_part)
 {
 
   int64_t part_idx, compare_idx;
-  int64_t duplicate_counts = 0;
+  int64_t duplicate_count = 0;
   for (part_idx = 0; part_idx < N_part - 1; ++part_idx)
   {
     if (part_id[part_idx] == part_id[part_idx + 1])
     {
-     ++duplicate_counts;
-      printf("%ld %ld\n", part_id[part_idx], part_id[part_idx + 1]);
+     ++duplicate_count;
     }
     
   }
-  printf("There were %ld duplicates\n", duplicate_counts);
-  return EXIT_SUCCESS;
+  printf("There were %ld duplicates\n", duplicate_count);
+  return duplicate_count; 
 
 }
 
-int64_t slice_particles_into_global(int64_t *part_id_local, int64_t *part_id_global, int64_t offset, int64_t N_part_local)
+int32_t slice_particles_into_global(int64_t *part_id_local, int64_t *part_id_global, int64_t offset, int64_t N_part_local)
 {
 
   int64_t part_idx;
@@ -166,22 +174,92 @@ int64_t slice_particles_into_global(int64_t *part_id_local, int64_t *part_id_glo
 
 } 
 
-int64_t create_unique_list(int64_t *part_id_global, int64_t N_part_global)
+int32_t create_unique_list(int64_t *part_id_global, int64_t N_part_global, int64_t *part_id_unique, int64_t duplicate_count)
 {
 
- return EXIT_SUCCESS; 
+  int64_t part_idx, unique_count = 1;
+
+  part_id_unique[0] = part_id_global[0];
+
+
+  for (part_idx = 0; part_idx < N_part_global; ++part_idx)
+  {
+    if (part_id_global[part_idx] != part_id_global[part_idx -1])
+    {
+      part_id_unique[unique_count] = part_id_global[part_idx];
+      ++unique_count;
+    } 
+  }
+
+  XASSERT(unique_count - 1 == N_part_global - duplicate_count, "Unique count = %ld \t N_part_global = %ld \t duplicate_count = %ld\nShould have unique count - 1 == N_part_global - duplicate_count (%ld)\n", unique_count, N_part_global, duplicate_count, N_part_global - duplicate_count);
+
+  return EXIT_SUCCESS; 
 
 }
 
+int32_t save_unique_list(int64_t *part_id_unique, int64_t N_part_unique, char *fbase, int32_t N_files)
+{
+
+  FILE *outfile;
+  char buf[1024];
+  int32_t file_idx;
+
+  int64_t N_ids_per_file = N_part_unique / N_files; // Evenly spread the IDs over each file.
+  int64_t N_final_file_extra = N_part_unique - (N_ids_per_file * N_files); // However the last file will need a few more if the number isn't perfectly divisible.
+  int64_t N_ids_thisfile;
+  int32_t N_ids_highword = N_part_unique >> 32;
+  int64_t write_idx, offset;
+ 
+  for (file_idx = 0; file_idx < N_files; ++file_idx)
+  {
+    if (file_idx == N_files - 1)
+    {
+      N_ids_thisfile = N_ids_per_file + N_final_file_extra; 
+    }
+    else
+    {
+      N_ids_thisfile = N_ids_per_file;
+    }
+ 
+    snprintf(buf, 1024, "%s.%d", fbase, file_idx);
+
+    outfile = fopen(buf, "wb");
+    if (outfile == NULL)
+    {
+      fprintf(stderr, "Could not open file %s for writing.\n", buf);
+      return EXIT_FAILURE;
+    }
+
+    // Header information //
+    fwrite(&file_idx, sizeof(int32_t), 1, outfile);
+    fwrite(&N_files, sizeof(int32_t), 1, outfile);
+    fwrite(&N_ids_thisfile, sizeof(int64_t), 1, outfile);
+    fwrite(&N_part_unique, sizeof(int64_t), 1, outfile);
+    fwrite(&N_ids_highword, sizeof(int32_t), 1, outfile); 
+
+    for (write_idx = 0; write_idx < N_ids_thisfile; ++write_idx)
+    {
+      fwrite(&part_id_unique[write_idx + offset], sizeof(int64_t), 1, outfile);
+    }
+
+    offset += N_ids_thisfile;
+
+    printf("Successfully wrote %ld IDs to %s\n", N_ids_thisfile, buf);
+  }
   
+  return EXIT_SUCCESS;
+
+  
+
+} 
 
 int main(int argc, char **argv)
 {
 
   int64_t N_halos_local, N_part_local;
-  int64_t N_halos_global = 0, N_part_global = 0;
+  int64_t N_halos_global = 0, N_part_global = 0, N_part_unique;
   int32_t status;
-  char filename[1024];
+  char filename[1024], outname[1024];
 
   struct binary_output_header *bhead;
   struct halo *halos_global;
@@ -191,6 +269,11 @@ int main(int argc, char **argv)
 
   int32_t n_files = 64, i_file;
   int64_t offset = 0;
+
+  int64_t duplicate_count;
+  int64_t *part_id_unique;
+
+  int32_t N_files = 64;
 
   if (argc != 2)
   { 
@@ -295,9 +378,26 @@ int main(int argc, char **argv)
 
   printf("Sorting Particles\n");     
   qsort(part_id_global, N_part_global, sizeof(int64_t), cmpfunc);    
-  check_duplicate_particles(part_id_global, N_part_global); 
-  create_unique_list(part_id_global, N_part_global);
+  duplicate_count = check_duplicate_particles(part_id_global, N_part_global);
+  N_part_unique = N_part_global - duplicate_count; 
+  part_id_unique = malloc(sizeof(int64_t) * N_part_unique);
+  if (part_id_unique == NULL)
+  {
+    fprintf(stderr, "Could not allocate memory for the unique particle IDs\n");
+    exit(EXIT_FAILURE);
+  } 
+ 
+  create_unique_list(part_id_global, N_part_global, part_id_unique, duplicate_count);
 
+  snprintf(outname, 1024, "/lustre/projects/p134_swin/jseiler/rockstar_particles/snap%03d", snapshot_idx);
+  status = save_unique_list(part_id_unique, N_part_unique, outname, N_files);
+  if (status == EXIT_FAILURE)
+  {
+    exit(EXIT_FAILURE);
+  }
+
+
+  free(part_id_unique);
   free(part_id_global);
   free(halos_global);
      

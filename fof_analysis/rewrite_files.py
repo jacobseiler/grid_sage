@@ -443,6 +443,7 @@ def link_fof_snapshot_full(snapshot_idx, group_dir, snap_dir, linked_outdir, n_f
             particle_mass = f['Header'].attrs['MassTable'] # Table of particle masses (length equal to TypeMax)
             HubbleParam = f['Header'].attrs['HubbleParam'] # Hubble Parameters
 
+
             if Ngroups_Total > 0:
                 for type_idx in range(0, TypeMax):
                     if len(fof_partid[type_idx]) > 0:
@@ -453,6 +454,15 @@ def link_fof_snapshot_full(snapshot_idx, group_dir, snap_dir, linked_outdir, n_f
                             pass
                         else:
                             snapshot_partid = particles['ParticleIDs']
+
+                            '''
+                            for i in range(0, len(snapshot_partid)):
+                                if (i % 1e7 == 0):
+                                    print(i)
+                                if(snapshot_partid[i] == 7811607368):
+                                    print(i)
+                                    exit()
+                            '''
                             ids_found = (np.nonzero(np.in1d(snapshot_partid, fof_partid[type_idx], assume_unique = True)))[0] # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns the indices of those values that have a 'True'.  
                                                                                                                          # Hence 'ids_found' will be the snapshot particle INDICES for those particles in the FoF group.
                                                                                                                          # Taken from https://stackoverflow.com/questions/11483863/python-intersection-indices-numpy-array.
@@ -479,8 +489,10 @@ def link_fof_snapshot_full(snapshot_idx, group_dir, snap_dir, linked_outdir, n_f
 
                                 numpart_thisfile[type_idx] += len(ids_found)
                                 numpart_allfiles[type_idx] += len(ids_found)
+                           
+                            
                                 print("I am rank {0} and I found {1} particles from snapshot {2} in chunk {3}".format(rank, len(ids_found), snapshot_idx, core_idx))   
- 
+                                
         ## At this point we have successfully linked all the particles in this Snapshot chunk to the FoF Groups (this can, and will at high z, be zero particles). ##
         ## Now we need to construct a hdf5 file for this chunk, WRITE OUT THE HEADER, and then write out all of the particle data. ##
         ## Note: Since an important piece of information for the header is the total number of FoF Particles within the group, we will need to write out the individual parts of the header, keep a running total of the number of particles, then loop through N_cores again to write out the cumulative information. ##
@@ -1214,22 +1226,20 @@ def kali_fof_ids_stats(fname):
     Ntask = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of tasks used for writing. 
     Offset = np.fromfile(fin, dtype=np.int32, count = 1)[0] # Number of IDs in previous files. 
     ids = np.fromfile(fin, dtype=np.int64, count = Nids) # Particle IDs for these groups.
-    
-    print("For snapshot {0} there are {1} groups with {2} IDs.".format(snapshot_idx, TotNgroups, TotNids)) 
-   
+         
     fin.close()    
 
     return TotNgroups
 
 def read_kali_fof_ids_full(kali_dir, snapshot_idx, n_files):
     
-    fname = "{0}groups_{1:03d}/group_ids_{1:03d}.0".format(kali_dir, snapshot_idx)
+    fname = "{0}_{1:03d}/group_ids_{1:03d}.0".format(kali_dir, snapshot_idx)
     TotNgroups = kali_fof_ids_stats(fname)
 
     fof_ids = []
     for i_file in range(n_files):
 
-        fname = "{0}groups_{1:03d}/group_ids_{1:03d}.{2}".format(kali_dir, snapshot_idx, i_file)
+        fname = "{0}_{1:03d}/group_ids_{1:03d}.{2}".format(kali_dir, snapshot_idx, i_file)
         ids_i_file = read_kali_fof_ids_single(fname)
 
         print("For subfile {0} there is {1} IDs".format(i_file, len(ids_i_file)))
@@ -1242,13 +1252,25 @@ def read_kali_fof_ids_full(kali_dir, snapshot_idx, n_files):
 
     return fof_ids, TotNgroups
 
+def check_kali_inline(kali_fof_dir):
+
+    not_inline_ids, not_inline_TotNgroups = read_kali_fof_ids_full(kali_fof_dir, 98, 1008)
+    inline_ids, inline_TotNgroups = read_kali_fof_ids_full("/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/groups", 98, 1540)
+   
+    print("For the non-inline finder there are {0} IDs across {1} groups.".format(len(not_inline_ids), not_inline_TotNgroups)) 
+    print("For the inline finder there are {0} IDs across {1} groups.".format(len(inline_ids), inline_TotNgroups)) 
+
+    matches = np.in1d(not_inline_ids, inline_ids, assume_unique = True) # np.in1d returns a True if the snapshot particle is found in the FoF list (False otherwise).  np.nonzero then returns the indices of those values that have a 'True'.  
+
+    print("There are {0} IDs in the non-inline that are in the inline".format(len(matches))) 
+
 if __name__ == '__main__':
 
     if (len(sys.argv) != 3):
         print("Usage: python3 rewrite_files.py <snaplow> <snaphigh>")
         exit()
 
-    kali_fof_dir = "/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/"
+    kali_fof_dir = "/lustre/projects/p134_swin/jseiler/simulations/1.6Gpc/Kali_2400_8364_FOF_halos/groups"
     kali_snap_dir = "/lustre/projects/p004_swin/msinha/reionization/simulations/Planck/Kali/2400/8364/snapshots/"
     kali_linked_outdir = "/lustre/projects/p134_swin/jseiler/kali/pseudo_snapshots/"
 
@@ -1262,6 +1284,7 @@ if __name__ == '__main__':
 
     print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
 
+    check_kali_inline(kali_fof_dir)
     for snapshot_idx in range(snaplow, snaphigh + 1):  
         #fof_ids = read_kali_fof_ids_full(kali_dir, snapshot_idx, 1008)
         #write_fof_header(snapshot_idx) 
