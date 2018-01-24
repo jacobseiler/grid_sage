@@ -2,8 +2,9 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_fiducial_quasarsubstep_1step 
+FileNameGalaxies       kali_fiducial 
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
+GridOutputDir          /lustre/projects/p004Swin/jseiler/kali/grids
 
 FirstFile         0
 LastFile          63
@@ -14,6 +15,9 @@ LastFile          63
 %------------------------------------------
 
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
+
+LowSnap           20
+HighSnap          98
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
 -> 98
@@ -35,10 +39,11 @@ Hubble_h        0.680999755859375
 
 PartMass        7.8436e-4
 
-BoxSize		108.95996093750153	
+BoxSize		108.96	
 GridSize	256
 
 use_tiamat 	1
+use_sage    1
 %------------------------------------------
 %----- SAGE recipe options ----------------
 %------------------------------------------
@@ -94,6 +99,20 @@ PhotoionDir 		/lustre/projects/p004_swin/jseiler/SAGE_output/1024/photoionizatio
 PhotoionName 		photoionization_noreion_MH_pos
 ReionRedshiftName	ReionizationRedshift_MHpos	
 ReionSnap           0
+
+%------------------------------------------
+%----- Grid Code Options ------------------
+%------------------------------------------
+
+PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
+SourceEfficiency    1
+Verbose         1
+fescPrescription        0  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
+alpha           1.0
+beta                    0.0
+fesc            0.10   ; Constant fesc for fescPrescription == 0.
+HaloPartCut     100    ; A halo must have length greater than HaloPartCut for us to count and grid it.
+
 
 %------------------------------------------
 %----- Other code-related information -----
