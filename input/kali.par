@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_fiducial 
+FileNameGalaxies       kali_fiducial_quasarsubstep_1step 
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 
 FirstFile         0

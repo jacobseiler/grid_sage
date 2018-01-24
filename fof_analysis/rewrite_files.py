@@ -407,7 +407,7 @@ def link_fof_snapshot_full(snapshot_idx, group_dir, snap_dir, linked_outdir, n_f
     fof_partid[1], Ngroups_Total = read_kali_fof_ids_full(group_dir, snapshot_idx, 1008)  
     
     print("I am rank {0} and I have read in {1} groups with a total of {3} particles for snapshot {2}".format(rank, Ngroups_Total, snapshot_idx, len(fof_partid[1])))
-
+    exit()
     ## At this point we now have the particle IDs for each of the groups within the snapshot stored. ##
     ## Now need to load in the snapshot chunk by chunk and search for the particle IDs. ##
     ## Note: Since we want to do the snapshot loading piecewise (so we don't need ~250Gb ram) we won't use yt. ##
@@ -1284,7 +1284,7 @@ if __name__ == '__main__':
 
     print("Snaplow = {0}, snaphigh = {1}".format(snaplow, snaphigh))
 
-    check_kali_inline(kali_fof_dir)
+    #check_kali_inline(kali_fof_dir)
     for snapshot_idx in range(snaplow, snaphigh + 1):  
         #fof_ids = read_kali_fof_ids_full(kali_dir, snapshot_idx, 1008)
         #write_fof_header(snapshot_idx) 

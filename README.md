@@ -21,5 +21,5 @@ At this point the variable is correctly being tracked and output.  Now need to u
 
 * Add the extra variable to `Galdesc_full` in the `ReadGals_SAGE_DelayedSN` function within `output/ReadScript.py`. Be careful that the order of this is identical to the save order within `core_save.c`. The name used corresponds to what it will be called by the Python scripts. The data type should be identical to that used by SAGE.
 
-The variable should now be tracked and read in properly, accessible via Galaxy[Variable][SnapNum] within the python reading scripts. 
+The variable should now be tracked and read in properly, accessible via `Galaxy[Variable][SnapNum]` within the python reading scripts. 
 

@@ -32,9 +32,9 @@ filename_root_matches : Root name for the output matches. Note: The 'trees' dire
 i_read_start : Start snapshot. Ex.: 0
 i_read_stop : End snapshot (inclusive). Ex.: 250
 n_search : Over how many snapshots should we search for the halo.  Beyond this number we assume the halo has fallen under the resolution limit/was never a halo in the first place.  Suggested to be ~16. Ex.: 16
-flag_write_headers : Flag or whether we want to write headers for the matches. Ex.: 1
+flag_write_headers : Flag or whether we want to write headers for the matches. NOTE: Greg HEAVILY advises to run with this flag to be 0 and then at the end, run again with flag as one. Ex.: 0
 
-Example Execution: ./make_trees_matches /home/jseiler/SAGE-stuff/greg_stuff/halos/subfind /home/jseiler/SAGE-stuff/greg_stuff/trees/matches/ 0 250 16 1 
+Example Execution: ./make_trees_matches /home/jseiler/SAGE-stuff/greg_stuff/halos/subfind /home/jseiler/SAGE-stuff/greg_stuff/trees/matches/ 0 250 16 0 
 
 Run time was fairly medium (~45 mins for all 250 Tiamat snapshots with n_search = 16)
 
