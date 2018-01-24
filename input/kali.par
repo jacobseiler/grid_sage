@@ -2,9 +2,9 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_fiducial 
+FileNameGalaxies       kali_fiducial_grid64
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
-GridOutputDir          /lustre/projects/p004Swin/jseiler/kali/grids
+GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0
 LastFile          63
@@ -40,10 +40,9 @@ Hubble_h        0.680999755859375
 PartMass        7.8436e-4
 
 BoxSize		108.96	
-GridSize	256
+GridSize    64	
 
 use_tiamat 	1
-use_sage    1
 %------------------------------------------
 %----- SAGE recipe options ----------------
 %------------------------------------------

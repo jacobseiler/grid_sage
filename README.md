@@ -10,7 +10,7 @@ Any issues/questions/ranting can be sent to Jacob Seiler: jseiler@swin.edu.au
 
 These steps outline how to add an extra variable for SAGE to track for each snapshot and how to update the Python reader routine.
 
-* Add the variable as a pointer to the GALAXY struct in `core_allvars.h`
+* Add the variable as a pointer to the `GALAXY` struct in `core_allvars.h`
 * Allocate the memory for each galaxy in the `malloc_grid_arrays` function within `core_io_tree.c`
 * **Important** Ensure the memory is being freed by adding the variable to the `free_grid_arrays` function in `core_io_tree.c`
 * Initialize the variable in the `init_galaxy` function within `model_misc.c`
@@ -23,3 +23,9 @@ At this point the variable is correctly being tracked and output.  Now need to u
 
 The variable should now be tracked and read in properly, accessible via `Galaxy[Variable][SnapNum]` within the python reading scripts. 
 
+Finally need to update the gridding code (post_processed_grid) to also track this new property.
+
+* Add the variable as a pointer to the `GALAXY_GRID` struct in `core_allvars_grid.h`
+* Allocate memory for the variable within the `load_gals` function in `core_io_gals.c`
+* **Not Necessary, but useful** Add the variable to the print statement in `core_allvars_grid.h` under the `DEBUG_GALS` ifdef.  Useful to check that you're reading in the galaxy data correctly.
+* Ensure the variable is being freed by adding it to the `free_gals` function in `core_io_gals.c`
