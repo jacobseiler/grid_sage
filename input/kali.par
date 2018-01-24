@@ -40,7 +40,7 @@ Hubble_h        0.680999755859375
 PartMass        7.8436e-4
 
 BoxSize		108.96	
-GridSize    64	
+GridSize    64 
 
 use_tiamat 	1
 %------------------------------------------
@@ -110,7 +110,7 @@ fescPrescription        0  ; 0: For constant f_esc (given by fesc); 1: Scaling w
 alpha           1.0
 beta                    0.0
 fesc            0.10   ; Constant fesc for fescPrescription == 0.
-HaloPartCut     100    ; A halo must have length greater than HaloPartCut for us to count and grid it.
+HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
 %------------------------------------------
