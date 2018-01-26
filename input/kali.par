@@ -7,7 +7,7 @@ OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0
-LastFile          63
+LastFile          0 
 
 
 %------------------------------------------
@@ -106,10 +106,17 @@ ReionSnap           0
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 SourceEfficiency    1
 Verbose         1
-fescPrescription        0  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
+fescPrescription        2  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
+MH_low          1e8
+fesc_low        0.7
+MH_high         1e12
+fesc_high       0.2
 alpha           1.0
-beta                    0.0
-fesc            0.10   ; Constant fesc for fescPrescription == 0.
+beta            0.0
+fesc            0.35   ; Constant fesc for fescPrescription == 0.
+quasar_baseline 0.2 ; Baseline escape fraction.
+quasar_boosted  1.0 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
+N_dyntime       1  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
