@@ -2,12 +2,12 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_fiducial_grid64
+FileNameGalaxies       kali_delayedSN_grid256_densfieldgridding 
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0
-LastFile          0 
+LastFile          63 
 
 
 %------------------------------------------
@@ -37,10 +37,10 @@ OmegaLambda     0.69800019264
 BaryonFrac      0.17
 Hubble_h        0.680999755859375
 
-PartMass        7.8436e-4
+PartMass        7.8436e-4 ; 1e10 Msun/h
 
 BoxSize		108.96	
-GridSize    64 
+GridSize    256 
 
 use_tiamat 	1
 %------------------------------------------
@@ -63,7 +63,7 @@ SfrEfficiency           0.01  ;efficiency of SF (SFprescription=0)
 FeedbackReheatingEpsilon    3.0   ;mass of cold gas reheated due to SF (see Martin 1999) (SupernovaRecipeOn=1)
 FeedbackEjectionEfficiency  0.3   ;mixing efficiency of SN energy with hot gas to unbind and eject some (SupernovaRecipeOn=1)
 
-IRA 			    1     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
+IRA 			    0     ; 1 to use instantaneous recycling approximation (SN), 0 to do delayed SN feedback.
 TimeResolutionSN	    10     ; Time (Myr) between elements used to calculate the delayed SN. 
 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
@@ -106,17 +106,17 @@ ReionSnap           0
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 SourceEfficiency    1
 Verbose         1
-fescPrescription        2  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
-MH_low          1e8
-fesc_low        0.7
-MH_high         1e12
-fesc_high       0.2
+fescPrescription 4  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
+MH_low          3.96e9 
+fesc_low        1e-4
+MH_high         3.16e11
+fesc_high       0.95
 alpha           1.0
 beta            0.0
 fesc            0.35   ; Constant fesc for fescPrescription == 0.
 quasar_baseline 0.2 ; Baseline escape fraction.
 quasar_boosted  1.0 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
-N_dyntime       1  ; Number of dynamical times a galaxy will have a boosted escape fraction.
+N_dyntime       5  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
