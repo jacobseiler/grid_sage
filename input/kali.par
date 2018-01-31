@@ -2,12 +2,12 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_delayedSN_grid256_densfieldgridding 
+FileNameGalaxies       tmp 
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0
-LastFile          63 
+LastFile          7 
 
 
 %------------------------------------------
