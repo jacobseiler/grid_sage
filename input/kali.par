@@ -2,12 +2,12 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       tmp 
+FileNameGalaxies       kali_fiducial_grid256
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0
-LastFile          7 
+LastFile          63 
 
 
 %------------------------------------------
@@ -16,8 +16,8 @@ LastFile          7
 
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
-LowSnap           20
-HighSnap          98
+LowSnap           20 
+HighSnap          98 
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
 -> 98
@@ -106,17 +106,22 @@ ReionSnap           0
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 SourceEfficiency    1
 Verbose         1
-fescPrescription 4  ; 0: For constant f_esc (given by fesc); 1: Scaling with Halo Mass (function from Kimm et al 2016); 2: Power Law as a function of halo mass. ; 3: Linear relationship as a
+fescPrescription 0  ; 
+% 0: For constant f_esc (given by fesc) 
+% 1: Scaling with Halo Mass (function from Kimm et al 2016) DEPRECATED 
+% 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
+% 3: Linear relationship as a function of ejected fraction. Function is of the form alpha*fej + beta.
+% 4: fesc is boosted by recent quasar activity. Has a baseline fesc given by quasar_baseline, boosted fesc given by quasar_boosted which lasts N_dyntime dynamical times.
 MH_low          3.96e9 
 fesc_low        1e-4
 MH_high         3.16e11
 fesc_high       0.95
-alpha           1.0
+alpha           0.7
 beta            0.0
-fesc            0.35   ; Constant fesc for fescPrescription == 0.
-quasar_baseline 0.2 ; Baseline escape fraction.
+fesc            0.30   ; Constant fesc for fescPrescription == 0.
+quasar_baseline 0.15 ; Baseline escape fraction.
 quasar_boosted  1.0 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
-N_dyntime       5  ; Number of dynamical times a galaxy will have a boosted escape fraction.
+N_dyntime       1.0  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
