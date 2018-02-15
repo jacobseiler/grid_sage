@@ -2,7 +2,7 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_fiducial_grid256
+FileNameGalaxies       kali_fiducial_grid256_noreionization
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
@@ -16,7 +16,7 @@ LastFile          63
 
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
-LowSnap           20 
+LowSnap           27 
 HighSnap          98 
 
 % List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
@@ -50,7 +50,7 @@ use_tiamat 	1
 SFprescription        0   ;0: original Croton et al. 2006
 AGNrecipeOn           2   ;0: switch off; 1: empirical model; 2: Bondi-Hoyle model; 3: cold cloud accretion model
 SupernovaRecipeOn     1   ;0: switch off
-ReionizationOn        1  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
+ReionizationOn        0  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
 DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabilities w. instability starbursts
 
 
@@ -94,9 +94,9 @@ IMF			2	; 1 for Salpeter, 2 for Chabrier.
 %------ Reionization Options --------------
 %------------------------------------------
 
-PhotoionDir 		/lustre/projects/p004_swin/jseiler/SAGE_output/1024/photoionization/
-PhotoionName 		photoionization_noreion_MH_pos
-ReionRedshiftName	ReionizationRedshift_MHpos	
+PhotoionDir 	    /lustre/projects/p004_swin/jseiler/kali/grids/cifog/
+PhotoionName 		photHI_delayed_photHI1_fescquasar_0.15_1.00_1.00	
+ReionRedshiftName   reionization_redshift_test_27_98	
 ReionSnap           0
 
 %------------------------------------------
@@ -104,7 +104,6 @@ ReionSnap           0
 %------------------------------------------
 
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
-SourceEfficiency    1
 Verbose         1
 fescPrescription 0  ; 
 % 0: For constant f_esc (given by fesc) 
@@ -112,6 +111,9 @@ fescPrescription 0  ;
 % 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
 % 3: Linear relationship as a function of ejected fraction. Function is of the form alpha*fej + beta.
 % 4: fesc is boosted by recent quasar activity. Has a baseline fesc given by quasar_baseline, boosted fesc given by quasar_boosted which lasts N_dyntime dynamical times.
+% 5: Anne's fesc functional form that decreases for increasing halo mass. Fixed points as defined in identical manner to fescPrescription == 2. 
+% 6: Anne's fesc functional form that increases for decreasing halo mass. Fixed points as defined in identical manner to fescPrescription == 2. 
+
 MH_low          3.96e9 
 fesc_low        1e-4
 MH_high         3.16e11
