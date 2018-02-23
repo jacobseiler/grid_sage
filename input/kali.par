@@ -2,14 +2,14 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies      tmp 
-%FileNameGalaxies      kali_fiducial_grid256_densfieldgridding
-%FileNameGalaxies       kali_coldhot 
+FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional
+%FileNameGalaxies       kali_starburst_quasarwind_fractional 
+%FileNameGalaxies       tmp 
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
-FirstFile         0
-LastFile          0 
+FirstFile         0 
+LastFile          63 
 
 
 %------------------------------------------
@@ -52,7 +52,7 @@ use_tiamat 	1
 SFprescription        0   ;0: original Croton et al. 2006
 AGNrecipeOn           2   ;0: switch off; 1: empirical model; 2: Bondi-Hoyle model; 3: cold cloud accretion model
 SupernovaRecipeOn     1   ;0: switch off
-ReionizationOn        3  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
+ReionizationOn        1  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
 DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabilities w. instability starbursts
 
 
@@ -71,7 +71,8 @@ TimeResolutionSN	    10     ; Time (Myr) between elements used to calculate the 
 ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dynamical time to hot
 
 RadioModeEfficiency     0.08  ;AGN radio mode efficiency (AGNrecipeOn=2)
-QuasarModeEfficiency    0.005 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
+%QuasarModeEfficiency    0.000 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
+QuasarModeEfficiency    0.1 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
 BlackHoleGrowthRate     0.015 ;fraction of cold gas added to the BH during mergers (AGNrecipeOn>0)
 
 ThreshMajorMerger       0.3   ;major merger when mass ratio greater than this
@@ -87,7 +88,7 @@ Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (R
 EnergySN                1.0e51  ;energy per supernova
 EtaSN                   0.5  ;supernova efficiency
 
-RescaleSN		1	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
+RescaleSN		0	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
 
 IMF			2	; 1 for Salpeter, 2 for Chabrier.
 
@@ -107,7 +108,7 @@ ReionSnap           28
 
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 Verbose         1
-fescPrescription 4  ; 
+fescPrescription 4; 
 % 0: For constant f_esc (given by fesc) 
 % 1: Scaling with Halo Mass (function from Kimm et al 2016) DEPRECATED 
 % 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
@@ -122,11 +123,11 @@ MH_high         3.16e11
 fesc_high       0.95
 alpha           0.7
 beta            0.0
-fesc            0.30   ; Constant fesc for fescPrescription == 0.
-quasar_baseline 0.15 ; Baseline escape fraction.
-quasar_boosted  1.0 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
+fesc            0.10 ; Constant fesc for fescPrescription == 0.
+quasar_baseline 0.05 ; Baseline escape fraction.
+quasar_boosted  1.00 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
 N_dyntime       1.0  ; Number of dynamical times a galaxy will have a boosted escape fraction.
-HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
+HaloPartCut     32; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
 %------------------------------------------
