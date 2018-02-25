@@ -72,7 +72,7 @@ ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dyn
 
 RadioModeEfficiency     0.08  ;AGN radio mode efficiency (AGNrecipeOn=2)
 %QuasarModeEfficiency    0.000 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
-QuasarModeEfficiency    0.1 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
+QuasarModeEfficiency    0.005 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
 BlackHoleGrowthRate     0.015 ;fraction of cold gas added to the BH during mergers (AGNrecipeOn>0)
 
 ThreshMajorMerger       0.3   ;major merger when mass ratio greater than this
@@ -126,7 +126,7 @@ beta            0.0
 fesc            0.10 ; Constant fesc for fescPrescription == 0.
 quasar_baseline 0.05 ; Baseline escape fraction.
 quasar_boosted  1.00 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
-N_dyntime       1.0  ; Number of dynamical times a galaxy will have a boosted escape fraction.
+N_dyntime       5.0  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
