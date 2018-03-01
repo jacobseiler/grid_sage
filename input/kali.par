@@ -2,10 +2,10 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional
+FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
 %FileNameGalaxies       kali_starburst_quasarwind_fractional 
 %FileNameGalaxies       tmp 
-OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies 
+OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability/
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0 
@@ -72,7 +72,7 @@ ReIncorporationFactor   0.15    ;fraction of ejected mass reincorporated per dyn
 
 RadioModeEfficiency     0.08  ;AGN radio mode efficiency (AGNrecipeOn=2)
 %QuasarModeEfficiency    0.000 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
-QuasarModeEfficiency    0.005 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
+QuasarModeEfficiency    0.02 ;AGN quasar mode wind heating efficiency (AGNrecipeOn>0)
 BlackHoleGrowthRate     0.015 ;fraction of cold gas added to the BH during mergers (AGNrecipeOn>0)
 
 ThreshMajorMerger       0.3   ;major merger when mass ratio greater than this
@@ -88,7 +88,7 @@ Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (R
 EnergySN                1.0e51  ;energy per supernova
 EtaSN                   0.5  ;supernova efficiency
 
-RescaleSN		0	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
+RescaleSN		1	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
 
 IMF			2	; 1 for Salpeter, 2 for Chabrier.
 
@@ -123,10 +123,10 @@ MH_high         3.16e11
 fesc_high       0.95
 alpha           0.7
 beta            0.0
-fesc            0.10 ; Constant fesc for fescPrescription == 0.
-quasar_baseline 0.05 ; Baseline escape fraction.
+fesc            0.20 ; Constant fesc for fescPrescription == 0.
+quasar_baseline 0.10 ; Baseline escape fraction.
 quasar_boosted  1.00 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
-N_dyntime       5.0  ; Number of dynamical times a galaxy will have a boosted escape fraction.
+N_dyntime       2.00  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
