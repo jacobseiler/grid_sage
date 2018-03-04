@@ -2,16 +2,16 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-%FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
+FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
 %FileNameGalaxies       kali_starburst_quasarwind_fractional 
-FileNameGalaxies       tmp 
+%FileNameGalaxies       tmp 
 %FileNameGalaxies       delayed_noreionization_photHI1_sphere_fesc0.30 
-%OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability/
-OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/
+OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability/
+%OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0 
-LastFile          0  
+LastFile          63  
 
 
 %------------------------------------------
@@ -21,7 +21,7 @@ LastFile          0
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
 LowSnap           27 
-HighSnap          98 
+HighSnap          40 
 
 %------------------------------------------
 %----- Simulation information  ------------
@@ -42,7 +42,7 @@ PartMass        7.8436e-4 ; 1e10 Msun/h
 BoxSize		108.96	
 GridSize    256 
 
-use_tiamat 	1
+self_consistent 1
 %------------------------------------------
 %----- SAGE recipe options ----------------
 %------------------------------------------
@@ -105,7 +105,7 @@ ReionSnap           29
 
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 Verbose         1 ;
-fescPrescription 4 ; 
+fescPrescription 0 ; 
 % 0: For constant f_esc (given by fesc) 
 % 1: Scaling with Halo Mass (function from Kimm et al 2016) DEPRECATED 
 % 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
