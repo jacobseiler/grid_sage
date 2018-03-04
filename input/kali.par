@@ -4,13 +4,14 @@
 
 %FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
 %FileNameGalaxies       kali_starburst_quasarwind_fractional 
-FileNameGalaxies       tmp 
+%FileNameGalaxies       tmp 
+FileNameGalaxies       delayed_noreionization_photHI1_sphere_fesc0.30 
 %OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability/
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
 
 FirstFile         0 
-LastFile          63 
+LastFile          0  
 
 
 %------------------------------------------
@@ -53,7 +54,7 @@ use_tiamat 	1
 SFprescription        0   ;0: original Croton et al. 2006
 AGNrecipeOn           2   ;0: switch off; 1: empirical model; 2: Bondi-Hoyle model; 3: cold cloud accretion model
 SupernovaRecipeOn     1   ;0: switch off
-ReionizationOn        1  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
+ReionizationOn        3  ;0: switch off; 1: Base; 2: Use <<Photoionization Options>> to calculate the Sobacchi & Meisinger (2014) filtering Mass. 
 DiskInstabilityOn     1   ;0: switch off; 1: bulge and BH growth through instabilities w. instability starbursts
 
 
@@ -87,7 +88,6 @@ Reionization_z0         8.0   ;these parameter choices give the best fit to Gene
 Reionization_zr         7.0   ;using the analytic fit of Kravtsov et al. 2004 (ReionizationOn=1)
 
 EnergySN                1.0e51  ;energy per supernova
-EtaSN                   0.5  ;supernova efficiency
 
 RescaleSN		1	; 0 to use constant SN ejection/mass loading factors (FeedbackReheatingEpsilon/Ejection). 1 to rescale. 
 
@@ -101,15 +101,15 @@ IMF			2	; 1 for Salpeter, 2 for Chabrier.
 PhotoionDir 	    /lustre/projects/p004_swin/jseiler/kali/reionization_feedback/kali_delayed_noreionization/
 PhotoionName 		photHI_delayed_noreionization_photHI1_sphere_fesc0.30
 ReionRedshiftName   reionization_redshift_27_98	
-ReionSnap           28
+ReionSnap           29
 
 %------------------------------------------
 %----- Grid Code Options ------------------
 %------------------------------------------
 
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
-Verbose         1
-fescPrescription 4; 
+Verbose         1 ;
+fescPrescription 4 ; 
 % 0: For constant f_esc (given by fesc) 
 % 1: Scaling with Halo Mass (function from Kimm et al 2016) DEPRECATED 
 % 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
@@ -128,7 +128,7 @@ fesc            0.20 ; Constant fesc for fescPrescription == 0.
 quasar_baseline 0.10 ; Baseline escape fraction.
 quasar_boosted  1.00 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
 N_dyntime       2.00  ; Number of dynamical times a galaxy will have a boosted escape fraction.
-HaloPartCut     32; A halo must have length greater than HaloPartCut for us to count and grid it.
+HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
 %------------------------------------------
