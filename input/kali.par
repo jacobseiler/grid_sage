@@ -4,8 +4,8 @@
 
 %FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
 %FileNameGalaxies       kali_starburst_quasarwind_fractional 
-%FileNameGalaxies       tmp 
-FileNameGalaxies       delayed_noreionization_photHI1_sphere_fesc0.30 
+FileNameGalaxies       tmp 
+%FileNameGalaxies       delayed_noreionization_photHI1_sphere_fesc0.30 
 %OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability/
 OutputDir              /lustre/projects/p004_swin/jseiler/kali/galaxies/
 GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/grids
@@ -22,10 +22,6 @@ NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for al
 
 LowSnap           27 
 HighSnap          98 
-
-% List your output snapshots after the arrow, highest to lowest (ignored when NumOutputs=-1). 
--> 98
-
 
 %------------------------------------------
 %----- Simulation information  ------------
