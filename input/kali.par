@@ -2,9 +2,9 @@
 %----- SAGE output file information -------
 %------------------------------------------
 
-FileNameGalaxies       kali_QuasarEff0.02
-OutputDir              /lustre/projects/p004_swin/jseiler/kali/kali_QuasarEff0.02/galaxies/
-GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/kali_QuasarEff0.02/grids/nion_fields/
+FileNameGalaxies       kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability 
+OutputDir              /lustre/projects/p004_swin/jseiler/kali/kali_QuasarEff0.02_oldSAGE/galaxies/ 
+GridOutputDir          /lustre/projects/p004_swin/jseiler/kali/kali_QuasarEff0.02_newSAGE/grids/nion_fields/
 
 FirstFile         0 
 LastFile          63 
@@ -16,8 +16,8 @@ LastFile          63
 
 NumOutputs        1   ; sets the desired number of galaxy outputs; use -1 for all outputs
 
-LowSnap           27 
-HighSnap          98 
+LowSnap           40 
+HighSnap          40 
 
 %------------------------------------------
 %----- Simulation information  ------------
@@ -101,7 +101,7 @@ ReionSnap           29
 
 PhotonPrescription  1  ; 0: for photons emitted based on Halos (using Source Efficiency parameter); 1: Using the photons from STARBURST spectra.
 Verbose         1 ;
-fescPrescription 4 ; 
+fescPrescription 0 ; 
 % 0: For constant f_esc (given by fesc) 
 % 1: Scaling with Halo Mass (function from Kimm et al 2016) DEPRECATED 
 % 2: Power Law as a function of halo mass. Fixed points of the curve are defined by (MH_low, fesc_low) and (MH_high, fesc_high).
@@ -119,7 +119,7 @@ beta            0.0
 fesc            0.20 ; Constant fesc for fescPrescription == 0.
 quasar_baseline 0.10 ; Baseline escape fraction.
 quasar_boosted  1.00 ; Escape fraction for a galaxy that has had quasar activity in the last 'N_dyntime' dynamical times.
-N_dyntime       2.50  ; Number of dynamical times a galaxy will have a boosted escape fraction.
+N_dyntime       2.00  ; Number of dynamical times a galaxy will have a boosted escape fraction.
 HaloPartCut     32 ; A halo must have length greater than HaloPartCut for us to count and grid it.
 
 
