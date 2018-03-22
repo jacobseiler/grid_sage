@@ -9,22 +9,23 @@
 #include "core_allvars.h"
 #include "core_proto.h"
 
-
-
-void init_galaxy(int p, int halonr)
+void init_galaxy(int p, int halonr, int treenr)
 {
-  int j, step;
+  int32_t j, step, status;
   
   ++count_gal;
 	assert(halonr == Halo[halonr].FirstHaloInFOFgroup);
 
-//  printf("GALAXY INITIALIZED p = %d Halonr = %d\n", p, halonr);
   Gal[p].Type = 0;
+  Gal[p].TreeNr = treenr;
 
   Gal[p].GalaxyNr = GalaxyCounter;
   GalaxyCounter++;
   
   Gal[p].HaloNr = halonr;
+  if (halonr == 83 && treenr == 5)
+    printf("In init_galaxy, SnapNum = %d\thalonr = %d\ttreenr = %d\n", Halo[halonr].SnapNum - 1, halonr, treenr);
+   
   Gal[p].MostBoundID = Halo[halonr].MostBoundID;
   //Gal[p].MostBoundID = -1; 
   Gal[p].SnapNum = Halo[halonr].SnapNum - 1;
@@ -90,12 +91,13 @@ void init_galaxy(int p, int halonr)
  
   Gal[p].IsMerged = -1;
 
-//  if(Gal[p].IsMalloced != 1)
-//  {
-  	malloc_grid_arrays(&Gal[p]);
+  status = malloc_grid_arrays(&Gal[p]);
+  if (status == EXIT_FAILURE)
+  {
+    ABORT(EXIT_FAILURE);
+  }
   ++gal_mallocs;	
-//  }
-  
+ 
   for (j = 0; j < MAXSNAPS; ++j)
   {
     Gal[p].GridHistory[j] = -1;
@@ -240,15 +242,26 @@ int32_t determine_1D_idx(float pos_x, float pos_y, float pos_z, int32_t *grid_1D
 
   int32_t x_grid, y_grid, z_grid;
 
-  x_grid = pos_x * GridSize/BoxSize;
-  y_grid = pos_y * GridSize/BoxSize;
-  z_grid = pos_z * GridSize/BoxSize;
+  x_grid = round(pos_x * GridSize/BoxSize);
+  if (x_grid == GridSize)
+    --x_grid;
+
+  y_grid = round(pos_y * GridSize/BoxSize);
+  if (y_grid == GridSize)
+    --y_grid;
+
+  z_grid = round(pos_z * GridSize/BoxSize);
+  if (z_grid == GridSize)
+    --z_grid;
+  
 
   *grid_1D = (z_grid*GridSize+y_grid)*GridSize+x_grid; // Convert the grid (x,y,z) to a 1D value.
 
   if(*grid_1D > CUBE(GridSize) || *grid_1D < 0) // Sanity check to ensure that no Grid Positions are outside the box.
   {
-    fprintf(stderr, "Found a Grid Position outside the bounds of the box or negative; grid_position = %d\nPos[0] = %.4f\t Pos[1] = %.4f\tPos[2] = %.4f", *grid_1D, pos_x, pos_y, pos_z); 
+    fprintf(stderr, "Found a Grid Position outside the bounds of the box or negative\nPos[0] = %.4f\tPos[1] = %.4f\tPos[2] = %.4f\n", pos_x, pos_y, pos_z);
+    fprintf(stderr, "Grid indices were x = %d\ty = %d\tz = %d\t1D = %d\tMaximum Allowed = %d\n", x_grid, y_grid, z_grid, *grid_1D, CUBE(GridSize) - 1);
+ 
     return EXIT_FAILURE;
   }
 
@@ -290,15 +303,7 @@ void update_grid_array(int p, int halonr, int steps_completed, int centralgal)
 
     Gal[p].GridZ[SnapCurr] = get_metallicity(Gal[p].ColdGas, Gal[p].MetalsColdGas); // Metallicity at this snapshot.
     Gal[p].GridCentralGalaxyMass[SnapCurr] = get_virial_mass(Halo[Gal[p].HaloNr].FirstHaloInFOFgroup); // Virial mass of the central galaxy (i.e. virial mass of the host halo).  
-    //printf("Gal[p].Halonr = %d \t %.4e \t get_virial = %.4e \t Halo[halonr].Mvir = %.4e\n", halonr, Gal[p].GridCentralGalaxyMass[SnapCurr], get_virial_mass(halonr), Halo[halonr].Mvir);
-//    printf("Gal[p].Halonr = %d \t %.4e \t get_virial = %.4e \t Halo[halonr].Mvir = %.4e\n", halonr, Gal[p].GridCentralGalaxyMass[SnapCurr], get_virial_mass(halonr), Halo[halonr].Mvir);
-//    float SFR_conversion = UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS / STEPS;
-//    float Ngamma_HI, Ngamma_HeI, Ngamma_HeII; 
-//    calculate_photons(Gal[p].GridSFR[SnapCurr]*SFR_conversion, Gal[p].GridZ[SnapCurr], &Ngamma_HI, &Ngamma_HeI, &Ngamma_HeII);
-//    Gal[p].GridPhotons_HI[SnapCurr] = Ngamma_HI; 
-//    Gal[p].GridPhotons_HeI[SnapCurr] = Ngamma_HeI; 
-//    Gal[p].GridPhotons_HeII[SnapCurr] = Ngamma_HeII; 
-//    Gal[p].MfiltGnedin[SnapCurr] = do_reionization(centralgal, ZZ[SnapCurr], 1);
+
     if (ReionizationOn == 2) 
     {  
       reionization_modifier = do_myreionization(centralgal, ZZ[SnapCurr], &MfiltSobacchi);
@@ -309,20 +314,27 @@ void update_grid_array(int p, int halonr, int steps_completed, int centralgal)
       reionization_modifier = 0.0;
       Gal[p].MfiltSobacchi[SnapCurr] = 1.0;
     }
-
  
     if((Gal[p].EjectedMass < 0.0) || ((Gal[p].HotGas + Gal[p].ColdGas + Gal[p].EjectedMass) == 0.0))
-	Gal[p].EjectedFraction[SnapCurr] = 0.0;
-    else 
+    {
+      Gal[p].EjectedFraction[SnapCurr] = 0.0; // Check divide by 0 case.
+    }
+    else
+    { 
         Gal[p].EjectedFraction[SnapCurr] = Gal[p].EjectedMass/(Gal[p].HotGas + Gal[p].ColdGas + Gal[p].EjectedMass);
+        // EjectedFraction is the fraction of baryons in the ejected reservoir.
+    }
     if (Gal[p].EjectedFraction[SnapCurr] < 0.0 || Gal[p].EjectedFraction[SnapCurr] > 1.0)
-       fprintf(stderr, "Found ejected fraction = %.4e \t p = %d \t Gal[p].EjectedMass = %.4e \t Gal[p].HotGas = %.4e \t Gal[p].ColdGas = %.4e\n\n", Gal[p].EjectedFraction[SnapCurr], p, Gal[p].EjectedMass, Gal[p].HotGas, Gal[p].ColdGas); 
+    {
+      fprintf(stderr, "Found ejected fraction = %.4e \t p = %d \t Gal[p].EjectedMass = %.4e \t Gal[p].HotGas = %.4e \t Gal[p].ColdGas = %.4e\n\n", Gal[p].EjectedFraction[SnapCurr], p, Gal[p].EjectedMass, Gal[p].HotGas, Gal[p].ColdGas); 
+      ABORT(EXIT_FAILURE); 
+    }
 
     Gal[p].LenHistory[SnapCurr] = Gal[p].Len;
     if (Gal[p].LenHistory[SnapCurr] < 0)
     {  
       fprintf(stderr, "Have a galaxy with Len < 0.  Galaxy number %d with Len %d.\n", p, Gal[p].Len);
-      exit(EXIT_FAILURE);
+      ABORT(EXIT_FAILURE);
     }
     if (Gal[p].EjectedMass > 0.0)
     {

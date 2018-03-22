@@ -18,7 +18,7 @@ int32_t read_parameter_file(char *fname)
 {
   FILE *fd;
   char buf[400], buf1[400], buf2[400], buf3[400];
-  int i, j, nt = 0, done;
+  int i, j, nt = 0;
   int id[MAXTAGS];
   void *addr[MAXTAGS];
   char tag[MAXTAGS][50];
@@ -150,12 +150,12 @@ int32_t read_parameter_file(char *fname)
   addr[nt] = &GridSize;
   id[nt++] = INT;
 
+  strcpy(tag[nt], "self_consistent");
+  addr[nt] = &self_consistent;
+  id[nt++] = INT;
+
   strcpy(tag[nt], "EnergySN");
   addr[nt] = &EnergySN;
-  id[nt++] = DOUBLE;
-
-  strcpy(tag[nt], "EtaSN");
-  addr[nt] = &EtaSN;
   id[nt++] = DOUBLE;
 
   strcpy(tag[nt], "IRA");
@@ -306,10 +306,9 @@ int32_t read_parameter_file(char *fname)
 	assert(LastSnapShotNr+1 > 0 && LastSnapShotNr+1 < ABSOLUTEMAXSNAPS);
 	MAXSNAPS = LastSnapShotNr + 1;
 
-	if(!(NOUT == -1 || (NOUT > 0 && NOUT <= ABSOLUTEMAXSNAPS)))
-		printf("NumOutputs must be -1 or between 1 and %i\n", ABSOLUTEMAXSNAPS);
-	assert(NOUT == -1 || (NOUT > 0 && NOUT <= ABSOLUTEMAXSNAPS));
-	
+
+  XASSERT(NOUT == 1, "The number of outputs must be 1.  The only output will be the galaxies at the final snapshot or the galaxies that have merged before this time.\n");
+		
 	// read in the output snapshot list
 	if(NOUT == -1)
 	{
@@ -323,30 +322,10 @@ int32_t read_parameter_file(char *fname)
 		printf("%i snapshots selected for output: ", NOUT);
 		// reopen the parameter file
 		fd = fopen(fname, "r");
-
-		done = 0;
-		while(!feof(fd) && !done)
-		{
-			// scan down to find the line with the snapshots
-			fscanf(fd, "%s", buf);
-			if(strcmp(buf, "->") == 0)
-			{
-				// read the snapshots into ListOutputSnaps
-				for (i=0; i<NOUT; i++)
-				{
-					fscanf(fd, "%d", &ListOutputSnaps[i]);
-					printf("%i ", ListOutputSnaps[i]);
-					if(i > 0)
-						XASSERT(ListOutputSnaps[i] < ListOutputSnaps[i-1], "The output snapshots must be in descending order. Go back and check your .ini file!\n");
-				}
-							
-				
-				done = 1;
-			}
-		}
-
+		
+    ListOutputSnaps[0] = LastSnapShotNr;
 		fclose(fd);
-		assert(done);
+	
 		printf("\n");
 	}
 

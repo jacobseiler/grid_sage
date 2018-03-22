@@ -2131,7 +2131,8 @@ def plot_optical_depth(ZZ, volume_frac, model_tags, OutputDir, output_tag):
         else:
             label = label_planck
         tau *= n_HI(0, AllVars.Hubble_h, AllVars.Omega_b, AllVars.Y) * AllVars.c_in_ms * AllVars.Sigmat
-    
+   
+        print("Tau = {0}".format(tau)) 
         ax.plot(ZZ, tau, label = label, color = PlotScripts.colors[p], ls = PlotScripts.linestyles[p], lw = paper_lineweight)	
 
     ax.set_xlabel(r"$z$")
@@ -2372,9 +2373,9 @@ if __name__ == '__main__':
 
     ## Kali ## 
    
-    model_tags = [r"$f_\mathrm{esc} \: \propto \: \mathrm{Quasar \: Activity}$", r"$f_\mathrm{esc} = 0.20$"]
+    model_tags = [r"$Base$", r"$Consistent$"]
 
-    output_tags = [r"Constant", r"Quasar"]
+    output_tags = [r"Base", r"Consistent"]
 
     number_models = 2
 
@@ -2385,17 +2386,17 @@ if __name__ == '__main__':
     # 5 : Britton's. 
     # 6 : Kali
 
-    model = 'paper_Kali'
+    model = 'self_consistent_kali'
 
     GridSize_model1 = 256
         
     precision_model1 = 2 # 0 for int reading, 1 for float, 2 for double.
    
     filepath_model1 = "/lustre/projects/p004_swin/jseiler/kali/grids/cifog/SF0.01_NoFractional_QuasarEff0.02_fesc0.20/XHII"
-    filepath_model2 = "/lustre/projects/p004_swin/jseiler/kali/grids/cifog/SF0.01_NoFractional_QuasarEff0.02_quasar_0.10_1.00_2.50/XHII"
+    filepath_model2 = "/lustre/projects/p004_swin/jseiler/kali/self_consistent/grids/cifog/XHII"
     
     filepath_nion_model1 = "/lustre/projects/p004_swin/jseiler/kali/grids/cifog/SF0.01_NoFractional_QuasarEff0.02_fesc0.20/nion_field/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_fesc0.20_HaloPartCut32_nionHI" 
-    filepath_nion_model2 = "/lustre/projects/p004_swin/jseiler/kali/grids/cifog/SF0.01_NoFractional_QuasarEff0.02_quasar_0.10_1.00_2.50/nion_field/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_quasar_0.10_1.00_2.50_HaloPartCut32_nionHI"
+    filepath_nion_model2 = "/lustre/projects/p004_swin/jseiler/kali/self_consistent/grids/nion/test_fesc0.20_HaloPartCut32_nionHI"
   
     filepath_density_model1 = "/lustre/projects/p134_swin/jseiler/kali/density_fields/averaged/"
     filepath_density_model2 = "/lustre/projects/p134_swin/jseiler/kali/density_fields/averaged/"

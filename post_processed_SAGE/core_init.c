@@ -47,8 +47,6 @@ void init(void)
   smallest_mass = 100000;
   lowmass_halo = 0;
 
-  count = 0;
-
   outside_box = 0;
   inside_box = 0;
 
@@ -106,7 +104,7 @@ void init(void)
   if(TimeResolutionSN > 50)
   {
     fprintf(stderr, "The selected time resolution for SN feedback (TimeResolutionSN) is set too high (%d Myr).  Using TimeResolutionSN > 50Myr is the same as using the instantaneous recycling approximation; set 'IRA' to 1 instead!\n", TimeResolutionSN); 
-    exit(EXIT_FAILURE);  
+    ABORT(EXIT_FAILURE);  
   } else if(TimeResolutionSN > 35)
   {
     fprintf(stderr, "Your selected time resolution for SN feedback (TimeResolutionSN) is quite high (%d Myr).  Beyond 50Myr the instantaneous recycling approximation is valid hence with your value it would likely be correct to set 'IRA' to 1.\n", TimeResolutionSN);
@@ -260,21 +258,21 @@ int32_t init_reion_lists(int32_t filenr)
 
   ReionList->ReionMod_List = malloc(sizeof(struct REIONMOD_LIST) * ReionList->NumLists);
 
-
-
   for (SnapNum = 0; SnapNum < ReionList->NumLists; ++SnapNum)
   {
 
     fread(&SnapNum_Read, sizeof(int32_t), 1, ListFile);
 
     fread(&ReionList->ReionMod_List[SnapNum].NHalos_Ionized, sizeof(int32_t), 1, ListFile);
-    printf("Snapshot %d has %d Halos in the list.\n", SnapNum_Read, ReionList->ReionMod_List[SnapNum].NHalos_Ionized);
+    //printf("Snapshot %d has %d Halos in the list.\n", SnapNum_Read, ReionList->ReionMod_List[SnapNum].NHalos_Ionized);
 
     if (SnapNum_Read != SnapNum)
     { 
       fprintf(stderr, "When attempting to read the reionization modifier lists, the read file had a snapshot number %d when we expected a number %d\n", SnapNum_Read, SnapNum);
       return EXIT_FAILURE;
     }
+
+    ReionList->ReionMod_List[SnapNum].NHalos_Found = 0;
  
     if (ReionList->ReionMod_List[SnapNum].NHalos_Ionized == 0) // There were no halos within ionized regions for this snapshot, reionization hasn't started or is in the beginning.
     {
@@ -289,6 +287,16 @@ int32_t init_reion_lists(int32_t filenr)
     }
 
     fread(ReionList->ReionMod_List[SnapNum].HaloID, sizeof(*(ReionList->ReionMod_List[SnapNum].HaloID)), ReionList->ReionMod_List[SnapNum].NHalos_Ionized, ListFile);
+
+    /*
+    int32_t i;
+    for (i = 0; i < ReionList->ReionMod_List[SnapNum].NHalos_Ionized; ++i)
+    {
+      int64_t ID;
+      ID = ReionList->ReionMod_List[SnapNum].HaloID[i];
+      printf("File %d: HaloID %ld is in the list, corresponding to tree %d and Halo number %d\n", filenr, ID, (int32_t)(ID >> 32), (int32_t)ID); 
+    }
+    */
 
     ReionList->ReionMod_List[SnapNum].ReionMod = malloc(sizeof(*(ReionList->ReionMod_List[SnapNum].ReionMod)) * ReionList->ReionMod_List[SnapNum].NHalos_Ionized);
     if (ReionList->ReionMod_List[SnapNum].ReionMod == NULL)
@@ -320,7 +328,6 @@ void set_units(void)
   UnitEnergy_in_cgs = UnitMass_in_g * pow(UnitLength_in_cm, 2) / pow(UnitTime_in_s, 2);
 
   EnergySNcode = EnergySN / UnitEnergy_in_cgs * Hubble_h;
-  EtaSNcode = EtaSN * (UnitMass_in_g / SOLAR_MASS) / Hubble_h;
 
   // convert some physical input parameters to internal units 
   Hubble = HUBBLE * UnitTime_in_s;

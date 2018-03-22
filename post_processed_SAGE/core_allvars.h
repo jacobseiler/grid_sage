@@ -46,7 +46,7 @@ do {                                                                \
             printf("Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
             printf(__VA_ARGS__);                                        \
             fflush(stdout);                                             \
-            exit(EXIT_FAILURE);                                         \
+            ABORT(EXIT_FAILURE);                                         \
         } \
     } while (0)
 #endif
@@ -144,6 +144,7 @@ struct GALAXY
   int   GalaxyNr;
   int   CentralGal;
   int   HaloNr;
+  int   TreeNr; 
   long long  MostBoundID;
 
   int   mergeType;  //0=none; 1=minor merger; 2=major merger; 3=disk instability; 4=disrupt to ICS
@@ -265,6 +266,7 @@ struct REIONMOD_STRUCT
   int32_t NumLists; // Will be reionization snapshot number.
   struct REIONMOD_LIST
   {
+    int32_t NHalos_Found; // Number of halos that have been matched.
     int32_t NHalos_Ionized; // Number of halos in the list.
     int64_t *HaloID; // This is a unique ID for each tree file.  The most significant 32 bits (left-most) is the tree number, and the least significant (right-most) bits is the halonr within the tree.
     float *ReionMod; // Reionization Modifer for each halo.
@@ -334,9 +336,9 @@ extern double OmegaLambda;
 extern double PartMass;
 extern double BoxSize;
 extern int GridSize;
+extern int self_consistent;
 extern double Hubble_h;
 extern double EnergySNcode, EnergySN;
-extern double EtaSNcode, EtaSN;
 
 // recipe flags 
 extern int    ReionizationOn;
@@ -407,8 +409,6 @@ extern int previous_tree;
 extern int lowmass_halo;
 
 extern double smallest_mass;
-
-extern double count;
 
 extern double IMF_norm;
 extern double IMF_slope;

@@ -21,8 +21,6 @@ int exitfail = 1;
 struct sigaction saveaction_XCPU;
 volatile sig_atomic_t gotXCPU = 0;
 
-
-
 void termination_handler(int signum)
 {
   gotXCPU = 1;
@@ -31,19 +29,17 @@ void termination_handler(int signum)
     (*saveaction_XCPU.sa_handler) (signum);
 }
 
-
-
 void myexit(int signum)
 {
 #ifdef MPI
-  printf("Task: %d\tnode: %s\tis exiting\n\n\n", ThisTask, ThisNode);
+  fprintf(stderr, "Task: %d\tnode: %s\tis exiting\n\n\n", ThisTask, ThisNode);
+  MPI_Abort(MPI_COMM_WORLD, signum);
 #else
-  printf("We're exiting\n\n\n");
+  fprintf(stderr, "We're exiting\n\n\n");
+	exit(signum);
 #endif
-	  exit(signum);
+
 }
-
-
 
 void bye()
 {
@@ -60,8 +56,6 @@ void bye()
 #endif
 	  }
 }
-
-
 
 int main(int argc, char **argv)
 {
@@ -91,9 +85,10 @@ int main(int argc, char **argv)
   if(argc != 2)
   {
     printf("\n  usage: sage <parameterfile>\n\n");
-    ABORT(0);
+    ABORT(EXIT_FAILURE);
   }
 
+  printf("Executing with %s %s\n", argv[0], argv[1]);
   atexit(bye);
 
   sigaction(SIGXCPU, NULL, &saveaction_XCPU);
@@ -104,7 +99,7 @@ int main(int argc, char **argv)
   status = read_parameter_file(argv[1]);
   if (status == EXIT_FAILURE)
   {
-    exit(EXIT_FAILURE);
+    ABORT(EXIT_FAILURE);
   }
 
   init();
@@ -114,7 +109,7 @@ int main(int argc, char **argv)
     status = init_grid();
     if (status == EXIT_FAILURE)
     {
-      exit(EXIT_FAILURE);
+      ABORT(EXIT_FAILURE);
     }
   }
     
@@ -130,7 +125,7 @@ int main(int argc, char **argv)
       status = init_reion_lists(filenr);
       if (status == EXIT_FAILURE)
       {
-        exit(EXIT_FAILURE);
+        ABORT(EXIT_FAILURE);
       }
     }
         
@@ -147,7 +142,7 @@ int main(int argc, char **argv)
 
 
     sprintf(bufz0, "%s/%s_z%1.3f_%d", OutputDir, FileNameGalaxies, ZZ[ListOutputSnaps[0]], filenr);
-    if(stat(bufz0, &filestatus) == 0)
+    if(stat(bufz0, &filestatus) == 0 && self_consistent == 0)
     {
       printf("-- output for tree %s already exists ... skipping\n", bufz0);
       continue;  // output seems to already exist, dont overwrite, move along
@@ -204,26 +199,28 @@ int main(int argc, char **argv)
 
     if (ReionizationOn == 3)
     {
-      status = free_reion_lists();
+      status = free_reion_lists(filenr);
+      if (status == EXIT_FAILURE)
+      {
+        ABORT(EXIT_FAILURE);
+      } 
     }
 
   } // filenr loop
   XASSERT((gal_mallocs == gal_frees) && (mergedgal_mallocs == mergedgal_frees), "We had %d Galaxy Mallocs and %d Galaxy Frees\n We had %d MergedGalaxy Mallocs and %d MergedGalaxy Frees.\n", gal_mallocs, gal_frees, mergedgal_mallocs, mergedgal_frees);
   exitfail = 0;
-  printf("There was %d firstSF and %d notfirstSF\n", count_firstSF, count_notfirstSF);
-  fprintf(stderr, "There was %d Star formation steps less than 50Myr and %d steps above 50Myr giving a ratio of %.4e \n", small_steps, large_steps, (float) large_steps/(float) small_steps); 
-  fprintf(stderr, "Write grid array was called %d times.\n", times_written);
-  fprintf(stderr, "There were %d galaxies outside box compared to %d inside\n", outside_box, inside_box);
+ 
   gsl_rng_free(random_generator); 
-
-  fprintf(stderr, "Returned Mvir %d times compared to Len %d times\n", count_Mvir, count_Len);
 
   if (ReionizationOn == 2 )
   {
     status = free_grid();
   } 
-  
-  printf("There were %ld total galaxies\n", count_gal);
+ 
+  char copy_command[MAXLEN];
+  snprintf(copy_command, MAXLEN-1, "cp %s %s", argv[1], OutputDir); 
+  system(copy_command);
+ 
   return 0;
   
 }

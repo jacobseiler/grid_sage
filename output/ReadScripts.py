@@ -23,9 +23,6 @@ from os.path import getsize as getFileSize
 from numpy import inf 
 import h5py
 
-from mpi4py import MPI
-
-
 np.set_printoptions(threshold=np.nan)
 def Read_SAGE_Objects(Model_Name, Object_Desc, Contain_TreeInfo, Dot, fnr, comm=None):
     # Initialize variables.
@@ -384,3 +381,248 @@ def load_data(fname):
     else:           
         print("") 
         return data['arr_0']
+
+def read_SAGE_ini(fname):
+    """
+    
+    Reads the SAGE .ini file into a structured array.
+
+    Parameters
+    ----------
+
+    fname: String. Required. 
+        Path to the .ini file.         
+
+    Returns
+    ---------
+
+    SAGE_desc: Numpy structured array.
+        Structured array containing the SAGE .ini parameters. 
+
+    names: Array-like of Strings.
+        Names that index the Numpy structured array. 
+         
+    """
+
+    SAGE_params_full = [ 
+         ('FileNameGalaxies', '<U1024'),
+         ('OutputDir', '<U1024'),
+         ('GridOutputDir', '<U1024'),
+         ('FirstFile', np.int32),
+         ('LastFile', np.int32),
+         ('NumOutputs', np.int32),
+         ('LowSnap', np.int32),
+         ('HighSnap', np.int32),
+         ('TreeName', '<U1024'),
+         ('SimulationDir', '<U1024'),
+         ('FileWithSnapList', '<U1024'),
+         ('LastSnapShotNr', '<U1024'),
+         ('Omega', np.float64),
+         ('OmegaLambda', np.float64),
+         ('BaryonFrac', np.float64),
+         ('Hubble_h', np.float64),
+         ('PartMass', np.float64),
+         ('BoxSize', np.float64),
+         ('GridSize', np.int64),
+         ('self_consistent', np.int64),
+         ('SFprescription', np.int64),
+         ('AGNrecipeOn', np.int64),
+         ('SupernovaRecipeOn', np.int64),
+         ('ReionizationOn', np.int64),
+         ('DiskInstabilityOn', np.int64),
+         ('SfrEfficiency', np.float64),
+         ('FeedbackReheatingEpsilon', np.float64),
+         ('FeedbackEjectionEfficiency', np.float64),
+         ('IRA', np.int64),
+         ('TimeResolutionSN', np.float64),
+         ('ReIncorporationFactor', np.float64),
+         ('RadioModeEfficiency', np.float64),
+         ('QuasarModeEfficiency', np.float64),
+         ('BlackHoleGrowthRate', np.float64),
+         ('ThreshMajorMerger', np.float64),
+         ('ThresholdSatDisruption', np.float64),
+         ('Yield', np.float64),
+         ('RecycleFraction', np.float64),
+         ('FracZleaveDisk', np.float64),
+         ('Reionization_z0', np.float64),
+         ('Reionization_zr', np.float64),
+         ('EnergySN', np.float64),
+         ('RescaleSN', np.float64),
+         ('IMF', np.int32),         
+         ('PhotoionDir', '<U1024'),
+         ('PhotoionName', '<U1024'),
+         ('ReionRedshiftName', '<U1024'),
+         ('ReionSnap', np.int32),
+         ('PhotonPrescription', np.int32),
+         ('Verbose', np.int32),
+         ('fescPrescription', np.int32),            
+         ('MH_low', np.float64),
+         ('fesc_low', np.float64),
+         ('MH_high', np.float64),
+         ('fesc_high', np.float64),
+         ('alpha', np.float64),
+         ('beta', np.float64),
+         ('fesc', np.float64),
+         ('quasar_baseline', np.float64),
+         ('quasar_boosted', np.float64),
+         ('N_dyntime', np.float64),
+         ('HaloPartCut', np.int32),
+         ('UnitLength_in_cm', np.float64),
+         ('UnitMass_in_g', np.float64),
+         ('UnitVelocity_in_cm_per_s', np.float64)
+         ]
+    
+                            
+    print("Reading in SAGE ini file") 
+
+    names = [SAGE_params_full[i][0] for i in range(len(SAGE_params_full))]
+    formats = [SAGE_params_full[i][1] for i in range(len(SAGE_params_full))]
+    SAGE_desc = np.empty(1, dtype = {'names':names, 'formats':formats}) 
+    
+    try:
+        with open (fname, "r") as SAGE_file:
+            data = SAGE_file.readlines()
+            count = 0
+            for line in range(len(data)):
+
+                if (data[line][0] == "%" or data[line][0] == "\n"):                
+                    continue
+                SAGE_desc[names[count]] = (data[line].split())[1]
+                count += 1
+        return SAGE_desc, names
+
+    except FileNotFoundError:
+        print("Could not file SAGE ini file {0}".format(fname))
+
+def read_cifog_ini(fname):
+    """
+    
+    Reads the cifog .ini file into a structured array.
+    Since the cifog .ini file has section headers (e.g., '[General]') that are required for the
+    cifog C code, we also generate a dictionary so we can reconstruct the .ini file with the 
+    headers present. 
+
+    Parameters
+    ----------
+
+    fname: String. Required. 
+        Path to the .ini file.         
+
+    Returns
+    ---------
+
+    cifog_desc: Numpy structured array.
+        Structured array containing the cifog .ini parameters. 
+
+    names: Array-like of Strings.
+        Names that index the Numpy structured array. 
+
+    headers: Dictionary.
+        Dictionary of section headers keyed by the parameter name following the section header.
+        E.g., the section '[General]' is before 'calcIonHistory' so headers['calcIonHistory'] =
+        '[General]'.
+         
+    """
+
+    cifog_params_full = [ 
+         ('calcIonHistory', np.int32),
+         ('numSnapshots', np.int32),
+         ('stopSnapshot', np.int32),
+         ('redshiftFile', '<U1024'),
+         ('redshift_prevSnapshot', np.float64),
+         ('finalRedshift', np.float64),
+         ('evolutionTime', np.float64),
+         ('size_linear_scale', np.float64),
+         ('first_increment_in_logscale', np.float64),
+         ('max_scale', np.float64),
+         ('useDefaultMeanDensity', np.int32),
+         ('useIonizeSphereModel', np.int32),
+         ('useWebModel', np.int32), 
+         ('photHImodel', np.int32),
+         ('calcMeanFreePath', np.int32),
+         ('constantRecombinations', np.int32),
+         ('calcRecombinations', np.int32),
+         ('solveForHelium', np.int32),
+         ('paddedBox', np.float64),
+         ('gridsize', np.int32),
+         ('boxsize', np.float64),
+         ('densityFilesAreInDoublePrecision', np.int32),
+         ('nionFilesAreInDoublePrecision', np.int32),
+         ('inputFilesAreComoving', np.int32),
+         ('inputFilesAreSimulation', np.int32),
+         ('SimulationLowSnap', np.int32),
+         ('SimulationHighSnap', np.int32),
+         ('inputIgmDensityFile', '<U1024'),
+         ('densityInOverdensity', np.int32),
+         ('meanDensity', np.float64),
+         ('inputIgmClumpFile', '<U1024'),
+         ('inputSourcesFile', '<U1024'),
+         ('inputNionFile', '<U1024'),
+         ('nion_factor', np.float64),
+         ('output_XHII_file', '<U1024'),
+         ('write_photHI_file', np.int32),
+         ('output_photHI_file', '<U1024'),
+         ('output_restart_file', '<U1024'),
+         ('hubble_h', np.float64),
+         ('omega_b', np.float64),
+         ('omega_m', np.float64),
+         ('omega_l', np.float64),
+         ('sigma8', np.float64),
+         ('Y', np.float64),         
+         ('photHI_bg_file', '<U1024'),
+         ('photHI_bg', np.float64),
+         ('meanFreePathInIonizedMedium', np.float64),
+         ('sourceSlopeIndex', np.float64),
+         ('dnrec_dt', np.float64),
+         ('recombinationTable', '<U1024'),
+         ('zmin', np.float64),            
+         ('zmax', np.float64),
+         ('dz', np.float64),
+         ('fmin', np.float64),
+         ('fmax', np.float64),
+         ('df', np.float64),
+         ('dcellmin', np.float64),
+         ('dcellmax', np.float64),
+         ('ddcell', np.float64),
+         ('inputSourcesHeIFile', '<U1024'),
+         ('inputNionHeIFile', '<U1024'),
+         ('inputSourcesHeIIFile', '<U1024'),
+         ('inputNionHeIIFile', '<U1024'),
+         ('dnrec_HeI_dt', np.float64),
+         ('dnrec_HeII_dt', np.float64),
+         ('output_XHeII_file', '<U1024'),
+         ('output_XHeIII_file', '<U1024')
+         ]
+    
+                            
+    print("Reading in cifog ini file") 
+
+    names = [cifog_params_full[i][0] for i in range(len(cifog_params_full))]
+    formats = [cifog_params_full[i][1] for i in range(len(cifog_params_full))]
+    cifog_desc = np.empty(1, dtype = {'names':names, 'formats':formats}) 
+    
+    headers = {}
+
+    try:
+        with open (fname, "r") as cifog_file:
+            data = cifog_file.readlines()
+            count = 0
+            for line in range(len(data)):
+
+                if (data[line][0] == "%" or data[line][0] == "\n"):                
+                    continue
+
+                if (data[line][0] == "["):
+                    headers[names[count]] = data[line]
+                    continue 
+
+                cifog_desc[names[count]] = (data[line].split())[2]
+                count += 1
+
+
+
+        return cifog_desc, names, headers
+
+    except FileNotFoundError:
+        print("Could not file SAGE ini file {0}".format(fname))
+ 

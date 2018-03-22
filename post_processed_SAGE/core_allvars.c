@@ -64,8 +64,8 @@ double Hubble_h;
 double PartMass;
 double BoxSize;
 int GridSize;
+int self_consistent;
 double EnergySNcode, EnergySN;
-double EtaSNcode, EtaSN;
 
 // recipe flags 
 int ReionizationOn;
@@ -132,8 +132,6 @@ int previous_tree;
 int lowmass_halo;
 
 double smallest_mass;
-
-double count;
 
 double IMF_norm;
 double IMF_slope;
