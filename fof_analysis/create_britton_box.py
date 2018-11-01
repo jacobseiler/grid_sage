@@ -76,7 +76,7 @@ def scale_positions(snap, chunk, snapdir, outdir):
 def create_smallbox(SnapLow, SnapHigh, num_chunks, snapdir, outdir):
 
     for snap in range(SnapLow, SnapHigh + 1):
-        global_min = 999 
+        global_min = 1000 
         global_max = -999
         N = 0
         for chunk in tqdm(range(num_chunks)):

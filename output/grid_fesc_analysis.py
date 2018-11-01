@@ -441,7 +441,7 @@ if __name__ == '__main__':
     #model_tags = [r"$Useless$", r"$f_\mathrm{esc} = 0.15, \: \mathrm{SF 0.03}$"]
     #model_tags = [model_tags[0]]
  
-    fname = ["/lustre/projects/p004_swin/jseiler/kali/grids/cifog/SF0.01_NoFractional_QuasarEff0.02_quasar_0.10_1.00_2.50/nion_field/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_quasar_0.10_1.00_2.50_HaloPartCut32_fescproperties", "/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_fesc0.20_HaloPartCut32_fescproperties"]     
+    fname =["/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_quasar_0.10_1.00_2.50_HaloPartCut32_fescproperties", "/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_fesc0.20_HaloPartCut32_fescproperties"]     
     fname = [fname[0]]
 
     #nion_fname = ["/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_fesc0.20_HaloPartCut32_nionHI", "/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_fesc0.10_HaloPartCut32_nionHI"]
