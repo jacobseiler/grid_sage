@@ -1,0 +1,24 @@
+#!/bin/bash
+# specify the queue name
+#PBS -q sstar
+# resource requests
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=00:20:00:00
+#PBS -N test_horizontal 
+#PBS -l pmem=3gb
+
+cd $PBS_O_WORKDIR 
+
+module load gmp/x86_64/gnu/5.0.5 
+module load mpfr/x86_64/gnu/3.1.1
+module load mpc/x86_64/gnu/1.0 
+module load isl/x86_64/gnu/0.14
+module load gcc/5.1.0
+module load openmpi/x86_64/gnu/1.10.2-psm
+module load hdf5/x86_64/gnu/1.8.17-openmpi-1.10.2-psm 
+module load gsl/x86_64/gnu/1.9 
+module load cuda/7.5 
+module load cmake/x86_64/gnu/3.5.1
+module load cfitsio/x86_64/gnu/3.370
+
+/home/jseiler/gbpCode/build/make_trees_horizontal /home/jseiler/SAGE-stuff/greg_stuff/ subfind test_trees 0 250 1 16 1 

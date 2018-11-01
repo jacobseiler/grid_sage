@@ -1,0 +1,19 @@
+#!/bin/bash
+# specify the queue name
+#PBS -q gstar
+# resource requests
+#PBS -l nodes=1:ppn=12
+#PBS -l walltime=00:10:00:00
+#PBS -N tiamat 
+#PBS -l pmem=2gb
+
+# list the assigned CPUs and GPUs
+echo Deploying job to CPUs ...
+cat $PBS_NODEFILE
+#echo and using GPU ...
+#cat $PBS_GPUFILE
+
+module load openmpi/x86_64/intel/1.8.6-psm
+module load gsl/x86_64/gnu/1.9
+
+mpirun -np 12 /home/jseiler/SAGE-stuff/post_processed_SAGE/sage /home/jseiler/SAGE-stuff/input/tiamat.par > /lustre/projects/p004_swin/jseiler/tiamat/log.log

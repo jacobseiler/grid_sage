@@ -1,0 +1,30 @@
+#!/bin/bash
+# specify the queue name
+#PBS -q gstar
+# resource requests
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=00:30:00:00
+#PBS -N dens_field_jobs
+
+module load hdf5/x86_64/gnu/1.8.9
+
+cd $PBS_O_WORKDIR 
+
+gridsize=256
+partnum=512
+
+for ((i = 0; i < 10; i++))
+{
+  if (($i < 10)) ; then 
+    TAG="00$i"
+  elif (($i > 9)) && (($i < 100)) ; then
+    TAG="0$i" 
+  else 
+    TAG="$i"
+  fi
+
+  echo $TAG 
+  ./gen_fields $gridsize /lustre/projects/p004_swin/shared/ahutter/LCDM100_Highz_small_timesteps/$partnum/snapdir_$TAG/BigTiamat_9556_LGadget2_snapshot_$TAG. 61 10000000 /lustre/projects/p004_swin/jseiler/densfield_output/$partnum/$gridsize/snap_$i >> /lustre/projects/p004_swin/jseiler/densfield_output/$partnum/$gridsize/$TAG_output.dat
+
+}
+

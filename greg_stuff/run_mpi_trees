@@ -1,0 +1,104 @@
+#!/bin/csh -f
+
+if ($#argv < 5) then
+  echo
+  echo 'Syntax: run_mpi #nodes #proc_per_node wall_time_in_hrs redirect_file_for_stderr mpi_command ...'
+  echo '------'
+  echo
+  exit(1)
+else
+   @ FIRST_ARG=1
+  set ARG_NNODE=($argv[$FIRST_ARG]);@ FIRST_ARG++
+  set ARG_PPN  =($argv[$FIRST_ARG]);@ FIRST_ARG++
+  set ARG_HRS  =($argv[$FIRST_ARG]);@ FIRST_ARG++
+  if ( $HOSTNAME == 'g2.hpc.swin.edu.au' ) then
+     set ARG_QUEUE  =($argv[$FIRST_ARG]);@ FIRST_ARG++
+  endif
+  set ARG_NAME =($argv[$FIRST_ARG]);@ FIRST_ARG++
+  set ARG_CMD  =($argv[$FIRST_ARG]);@ FIRST_ARG++
+  set ARG_OUT  =($ARG_NAME'.stderr')
+endif 
+
+@ NPROCS = $ARG_PPN * $ARG_NNODE
+
+set GBP_MPI_BIN = ( '' )
+set GBP_MPI_LIB = ( '' )
+
+if ( ${GBP_QUEUE_TYPE} == 'PBS' ) then
+  # Set the mpiexec command
+  # May want to try --mca btl_tcp_if_include eth0 
+  #set CMD_STRING = ( $GBP_MPI_BIN'/bin/mpiexec -mca btl tcp,self '$GBP_BIN'/mpi/'$ARG_CMD )
+  #set CMD_STRING = ( $GBP_MPI_BIN'/bin/mpiexec --mca btl_openib_cpc_include rdmacm --mca btl self,openib '$GBP_BIN'/mpi/'$ARG_CMD )
+  #set CMD_STRING = ( $GBP_MPI_BIN'/bin/mpiexec --mca btl self,openib '$GBP_BIN'/mpi/'$ARG_CMD )
+
+  set CMD_STRING = ( $ARG_CMD )
+
+  # Add the command arguments
+  @ i=$FIRST_ARG
+  while ($i <= $#argv)
+    set CMD_STRING = ( $CMD_STRING' '$argv[$i] )
+    @ i++
+  end
+  set CMD_STRING = ( $CMD_STRING' >& '$ARG_OUT )
+
+  set SUBT_FILE="`pwd`/`create_tmpfile`"
+
+  echo "#\!/bin/csh"                                                                                     > $SUBT_FILE
+  echo '#PBS -N '$ARG_NAME                                                                              >> $SUBT_FILE
+  echo '#PBS -l nodes='$ARG_NNODE':ppn='$ARG_PPN',walltime='$ARG_HRS':00:00'                            >> $SUBT_FILE
+  echo '#PBS -S /bin/csh'                                                                               >> $SUBT_FILE
+  echo '#PBS -l pmem=3GB'                                                                              >> $SUBT_FILE
+  if ( $HOSTNAME == 'g2.hpc.swin.edu.au' ) then
+     echo '#PBS -q '$ARG_QUEUE                                                                          >> $SUBT_FILE
+  endif
+  echo '#PBS -V'                                                                                        >> $SUBT_FILE
+  echo '#PBS -d '"`pwd`"                                                                                >> $SUBT_FILE
+  echo                                                                                                  >> $SUBT_FILE
+  echo 'setenv NPROCS          '$NPROCS                                                                 >> $SUBT_FILE
+  echo 'setenv NNODES          `uniq $PBS_NODEFILE | wc -l`'                                            >> $SUBT_FILE
+  echo 'setenv DATE_START      `date`'                                                                  >> $SUBT_FILE
+  #echo 'setenv MALLOC_CHECK_ 2'                                                                        >> $SUBT_FILE
+  echo                                                                                                  >> $SUBT_FILE
+  echo 'cd   $PBS_O_WORKDIR'                                                                            >> $SUBT_FILE
+  echo 'echo '-------------------------------''                                                         >> $SUBT_FILE
+  echo 'echo "DATE     is {"$DATE_START"}"'                                                             >> $SUBT_FILE
+  echo 'echo "PWD      is {"$PWD"}"'                                                                    >> $SUBT_FILE
+  echo 'echo "NNODES   is {"$NNODES"}"'                                                                 >> $SUBT_FILE
+  echo 'echo "NPROCS   is {"$NPROCS"}"'                                                                 >> $SUBT_FILE
+  echo 'echo "Using the following nodes:"'                                                              >> $SUBT_FILE
+  echo 'cat $PBS_NODEFILE | uniq'                                                                       >> $SUBT_FILE
+  echo 'echo '-------------------------------''                                                         >> $SUBT_FILE
+  echo                                                                                                  >> $SUBT_FILE
+  echo -n $CMD_STRING                                                                                   >> $SUBT_FILE
+  echo                                                                                                  >> $SUBT_FILE
+else
+  # Set environment variables
+  #setenv PATH            $GBP_MPI_BIN:$PATH
+  #setenv LD_LIBRARY_PATH $GBP_MPI_LIB:$LD_LIBRARY_PATH
+  # Set the mpiexec command
+  set CMD_STRING = ( $ARG_CMD )
+
+  # Add the command arguments
+  @ i=$FIRST_ARG
+  while ($i <= $#argv)
+    set CMD_STRING = ( $CMD_STRING' '$argv[$i] )
+    @ i++
+  end
+  set CMD_STRING = ( $CMD_STRING' >& '$ARG_OUT )
+endif
+
+# Print a status message
+echo 'QUEUE TYPE ={'${GBP_QUEUE_TYPE}'}'
+echo 'GBP_MPI_BIN={'${GBP_MPI_BIN}'}'
+echo 'CMD_STRING ={'${CMD_STRING}'}'
+#echo 'SUBT_FILE  ={'${SUBT_FILE}'}'
+
+# Execute command
+if ( ${GBP_QUEUE_TYPE} == 'PBS' ) then
+  qsub $SUBT_FILE
+#cat $SUBT_FILE
+  rm   $SUBT_FILE
+else
+  $CMD_STRING
+endif
+

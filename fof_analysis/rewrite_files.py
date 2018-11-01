@@ -958,7 +958,7 @@ def check_subfind_results(snapshot_idx):
     '''
     plt.tight_layout()
 
-    outputFile = "./subfind_hmf/HMF_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
+    outputFile = "./new_hmf/HMF_z{0:.3f}.png".format(AllVars.SnapZ[snapshot_idx])
     plt.savefig(outputFile, bbox_inches='tight')  # Save the figure
     print('Saved file to {0}'.format(outputFile))
     plt.close()
@@ -1294,10 +1294,10 @@ if __name__ == '__main__':
         #link_fof_snapshot_ids(snapshot_idx) 
         #check_linking_ids(snapshot_idx)
 
-        link_fof_snapshot_full(snapshot_idx, kali_fof_dir, kali_snap_dir, kali_linked_outdir, 256)
+        #link_fof_snapshot_full(snapshot_idx, kali_fof_dir, kali_snap_dir, kali_linked_outdir, 256)
         #check_linking_full(snapshot_idx, 0)
         
-        #check_subfind_results(snapshot_idx) 
+        check_subfind_results(snapshot_idx) 
 
         #create_fof_kdcount(snapshot_idx)
         #create_fof_yt(snapshot_idx, yt_fof_outdir)

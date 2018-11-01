@@ -475,7 +475,8 @@ if __name__ == '__main__':
     model_tags = [r"$\mathbf{f_{esc} \: \propto \: Quasar \: Activity}$", 
                   r"$\mathbf{f_{esc} = 0.20}$"]
  
-    fname = ["/lustre/projects/p004_swin/jseiler/kali/kali_QuasarEff0.02/grids/nion_fields/kali_QuasarEff0.02_quasar_0.10_1.00_2.50_HaloPartCut32_fescproperties"]
+    fname =["/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_quasar_0.10_1.00_2.50_HaloPartCut32_fescproperties", "/lustre/projects/p004_swin/jseiler/kali/grids/kali_starburst_quasarwind_SF0.01_NoFractional_QuasarEff0.01_CorrectDiskInstability_fesc0.20_HaloPartCut32_fescproperties"]     
+
     fname = [fname[0]]
 
  
